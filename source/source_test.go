@@ -28,7 +28,7 @@ func TestTeardownSource_NoOpen(t *testing.T) {
 	con := NewSource()
 	err := con.Teardown(context.Background())
 
-	if !strings.HasSuffix(err.Error(), "client not intialized yet") {
-		t.Errorf("expected client not intialized error, got %v", err)
+	if err != nil {
+		t.Errorf("expected no error but, got %v", err)
 	}
 }

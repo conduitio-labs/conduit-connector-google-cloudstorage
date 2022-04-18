@@ -16,7 +16,7 @@ const (
 
 type SourceConfig struct {
 	config.Config
-	ConfigKeyPollingPeriod time.Duration
+	PollingPeriod time.Duration
 }
 
 func ParseSourceConfig(ctx context.Context, cfg map[string]string) (SourceConfig, error) {
@@ -50,7 +50,7 @@ func ParseSourceConfig(ctx context.Context, cfg map[string]string) (SourceConfig
 
 	logger.Info().Msg("ParseSourceConfig: Start Parsing the Config")
 	return SourceConfig{
-		Config:                 globalConfig,
-		ConfigKeyPollingPeriod: pollingPeriod,
+		Config:        globalConfig,
+		PollingPeriod: pollingPeriod,
 	}, nil
 }

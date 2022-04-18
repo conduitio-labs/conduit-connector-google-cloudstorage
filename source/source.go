@@ -2,22 +2,21 @@ package source
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io/ioutil"
 
 	"cloud.google.com/go/storage"
 	"github.com/conduitio/conduit-connector-google-cloudstorage/source/config"
+	"github.com/conduitio/conduit-connector-google-cloudstorage/source/iterator"
+	"github.com/conduitio/conduit-connector-google-cloudstorage/source/position"
 	sdk "github.com/conduitio/conduit-connector-sdk"
-	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
 
 type Source struct {
 	sdk.UnimplementedSource
-	config   config.SourceConfig
-	client   *storage.Client
-	iterator *storage.ObjectIterator
+	config           config.SourceConfig
+	client           *storage.Client
+	combinedIterator *iterator.CombinedIterator
 	//lastPositionRead sdk.Position
 }
 
@@ -53,40 +52,39 @@ func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
 }
 
 func (s *Source) Open(ctx context.Context, pos sdk.Position) error {
-	s.iterator = s.client.Bucket(s.config.GoogleCloudStorageBucket).Objects(ctx, nil)
+	logger := sdk.Logger(ctx)
+	logger.Info().Msg("Source Open: Starting Open the Source Connector...")
+
+	p, err := position.ParseRecordPosition(pos)
+	if err != nil {
+		logger.Error().Msgf("Source Open: Error while parsing the record position: %v", err)
+		return err
+	}
+
+	s.combinedIterator, err = iterator.NewCombinedIterator(ctx, s.config.GoogleCloudStorageBucket, s.config.PollingPeriod, s.client, p)
+	if err != nil {
+		logger.Error().Msgf("Source Open: Error while create a combined iterator: %v", err)
+		return fmt.Errorf("couldn't create a combined iterator: %w", err)
+	}
+	logger.Info().Msg("Source Open: Successfully completed Open of the Source Connector...")
 	return nil
 }
 
 func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
-	objectAttrs, err := s.iterator.Next()
-	if err == iterator.Done {
+	logger := sdk.Logger(ctx)
+	logger.Info().Msg("Source Read: Starting Read of the Source Connector...")
+
+	r, err := s.combinedIterator.Next(ctx)
+
+	if err == iterator.ErrDone {
+		logger.Error().Msg("Source Read: combined iterator fetched complete records")
 		return sdk.Record{}, sdk.ErrBackoffRetry
 	} else if err != nil {
+		logger.Error().Msgf("Source Read: Error while fetching the records: %v", err)
 		return sdk.Record{}, err
 	}
-
-	rc, err := s.client.Bucket(s.config.GoogleCloudStorageBucket).Object(objectAttrs.Name).NewReader(ctx)
-	if err != nil {
-		return sdk.Record{}, fmt.Errorf("Object(%q).NewReader: %v", objectAttrs.Name, err)
-	}
-	defer rc.Close()
-
-	data, err := ioutil.ReadAll(rc)
-	if err != nil {
-		return sdk.Record{}, fmt.Errorf("Object(%q).Cant read data from reader: %v", objectAttrs.Name, err)
-	}
-
-	position := sdk.Position(fmt.Sprintf("%s_%d", objectAttrs.Name, objectAttrs.Updated.Unix()))
-
-	return sdk.Record{
-		Position: position,
-		Metadata: map[string]string{
-			"content-type": objectAttrs.ContentType,
-		},
-		Key:       sdk.RawData(objectAttrs.Name),
-		Payload:   sdk.RawData(data),
-		CreatedAt: objectAttrs.Created,
-	}, nil
+	logger.Info().Msg("Source Read: Successfully completed Read of the Source Connector...")
+	return r, nil
 }
 
 func (s *Source) Ack(ctx context.Context, position sdk.Position) error {
@@ -97,15 +95,17 @@ func (s *Source) Teardown(ctx context.Context) error {
 	logger := sdk.Logger(ctx)
 	logger.Info().Msg("Source Teardown: Starting Teardown the Source Connector...")
 
-	if s.client == nil {
-		logger.Error().Msg("Source Teardown: Unable to close the storage client which is not even intialized")
-		return errors.New("storage client not intialized yet")
+	if s.client != nil {
+		err := s.client.Close()
+		if err != nil {
+			logger.Error().Msgf("Source Teardown: Error While Closing the Storage Client: %v", err)
+			return err
+		}
 	}
 
-	err := s.client.Close()
-	if err != nil {
-		logger.Error().Msgf("Source Teardown: Error While Closing the Storage Client: %v", err)
-		return err
+	if s.combinedIterator != nil {
+		s.combinedIterator.Stop()
+		s.combinedIterator = nil
 	}
 
 	logger.Info().Msg("Source Teardown: Successfully Teardown the Source Connector...")
