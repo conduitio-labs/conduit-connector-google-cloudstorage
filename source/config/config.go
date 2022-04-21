@@ -1,3 +1,17 @@
+// Copyright © 2022 Meroxa, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package config
 
 import (
@@ -10,22 +24,28 @@ import (
 )
 
 const (
+	// ConfigKeyPollingPeriod is the config name for the GCS CDC polling period
 	ConfigKeyPollingPeriod = "pollingPeriod"
-	DefaultPollingPeriod   = "1s"
+
+	// DefaultPollingPeriod is the value assumed for the pooling period when the
+	// config omits the polling period parameter
+	DefaultPollingPeriod = "1s"
 )
 
+// SourceConfig represents source configuration with GCS configurations
 type SourceConfig struct {
 	config.Config
 	PollingPeriod time.Duration
 }
 
+// ParseSourceConfig attempts to parse the configurations into a SourceConfig struct that Source could utilize
 func ParseSourceConfig(ctx context.Context, cfg map[string]string) (SourceConfig, error) {
-	logger := sdk.Logger(ctx)
-	logger.Info().Msg("ParseSourceConfig: Start Parsing the Config")
+	logger := sdk.Logger(ctx).With().Str("Method", "ParseSourceConfig").Logger()
+	logger.Trace().Msg("Start Parsing the Config")
 
 	globalConfig, err := config.ParseGlobalConfig(ctx, cfg)
 	if err != nil {
-		logger.Error().Msgf("ParseSourceConfig: Error While Parsing the Global Config: %v", err)
+		logger.Error().Stack().Err(err).Msg("Error While Parsing the Global Config")
 		return SourceConfig{}, err
 	}
 
@@ -48,7 +68,7 @@ func ParseSourceConfig(ctx context.Context, cfg map[string]string) (SourceConfig
 		)
 	}
 
-	logger.Info().Msg("ParseSourceConfig: Start Parsing the Config")
+	logger.Trace().Msg("Start Parsing the Config")
 	return SourceConfig{
 		Config:        globalConfig,
 		PollingPeriod: pollingPeriod,

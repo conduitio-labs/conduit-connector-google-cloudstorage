@@ -1,3 +1,17 @@
+// Copyright © 2022 Meroxa, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package iterator
 
 import (
@@ -7,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -27,6 +42,7 @@ type CDCIterator struct {
 	isTruncated   bool
 	nextKeyMarker *string
 	tomb          *tomb.Tomb
+	lastEntryKey  string
 }
 
 type CacheEntry struct {
@@ -36,9 +52,8 @@ type CacheEntry struct {
 }
 
 // NewCDCIterator returns a CDCIterator and starts the process of listening to changes every pollingPeriod.
-func NewCDCIterator(ctx context.Context, bucket string, pollingPeriod time.Duration, client *storage.Client, from time.Time) (*CDCIterator, error) {
-	logger := sdk.Logger(ctx)
-	logger.Info().Msg("NewCDCIterator: Starting the NewCDCIterator")
+func NewCDCIterator(ctx context.Context, bucket string, pollingPeriod time.Duration, client *storage.Client, from time.Time, fromKey string) (*CDCIterator, error) {
+	sdk.Logger(ctx).Trace().Str("Method", "NewCDCIterator").Msg("NewCDCIterator: Starting the NewCDCIterator")
 
 	cdc := CDCIterator{
 		bucket:        bucket,
@@ -50,6 +65,7 @@ func NewCDCIterator(ctx context.Context, bucket string, pollingPeriod time.Durat
 		nextKeyMarker: nil,
 		tomb:          &tomb.Tomb{},
 		lastModified:  from,
+		lastEntryKey:  fromKey,
 	}
 
 	// start listening to changes
@@ -89,27 +105,16 @@ func (w *CDCIterator) startCDC() error {
 		case <-w.tomb.Dying():
 			return w.tomb.Err()
 		case <-w.ticker.C: // detect changes every polling period
-			cache := make([]CacheEntry, 0, 1000)
-			it := w.client.Bucket(w.bucket).Objects(w.tomb.Context(nil), nil)
-			for {
-				objectAttrs, err := it.Next()
-				if err == iterator.Done {
-					fmt.Fprint(os.Stdout, "startCDC: iterator.Done\n")
-					break
-				} else if err != nil {
-					return fmt.Errorf("startCDC: Bucket(%q).Objects: %v\n", w.bucket, err)
-				}
-				if !(objectAttrs.Updated.After(w.lastModified) || objectAttrs.Deleted.After(w.lastModified)) {
-					fmt.Fprintf(os.Stdout, "startCDC: Object %s modified before lastmodified time: %v, Object Updated at %v,Object Deleted at %v\n", objectAttrs.Name, w.lastModified, objectAttrs.Updated, objectAttrs.Deleted)
-					continue
-				}
-				entry := CacheEntry{
-					key:          objectAttrs.Name,
-					lastModified: objectAttrs.Updated,
-					deleteMarker: !objectAttrs.Deleted.IsZero(),
-				}
-				fmt.Fprintf(os.Stdout, "startCDC: Object %s added to the cache entry with updated at %v,deleted at %v, CDC .lastModified: %v\n", objectAttrs.Name, objectAttrs.Updated, objectAttrs.Deleted, w.lastModified)
-				cache = append(cache, entry)
+			query := &storage.Query{Versions: true}
+			err := query.SetAttrSelection([]string{"Updated", "Deleted", "Name"})
+			if err != nil {
+				return fmt.Errorf("startCDC:Error while query SetAttrSelection Bucket(%q).Objects: %w", w.bucket, err)
+			}
+			it := w.client.Bucket(w.bucket).Objects(w.tomb.Context(nil), query)
+
+			cache, err := w.fetchCacheEntries(it)
+			if err != nil {
+				return fmt.Errorf("startCDC:Error while fetchCacheEntries Bucket(%q).Objects: %w", w.bucket, err)
 			}
 
 			if len(cache) == 0 {
@@ -122,6 +127,7 @@ func (w *CDCIterator) startCDC() error {
 			select {
 			case w.caches <- cache:
 				w.lastModified = cache[len(cache)-1].lastModified
+				w.lastEntryKey = cache[len(cache)-1].key
 				// worked fine
 			case <-w.tomb.Dying():
 				return w.tomb.Err()
@@ -169,6 +175,39 @@ func (w *CDCIterator) flush() error {
 	}
 }
 
+//fetchCacheEntries create the slice of entries/objects based upon the lastmodified time so they should be part of CDC
+func (w *CDCIterator) fetchCacheEntries(it *storage.ObjectIterator) ([]CacheEntry, error) {
+	cache := make([]CacheEntry, 0, 1000)
+	for {
+		objectAttrs, err := it.Next()
+		if err == iterator.Done {
+			fmt.Fprint(os.Stdout, "startCDC: iterator.Done\n")
+			break
+		} else if err != nil {
+			return cache, fmt.Errorf("startCDC: Bucket(%q).Objects: %v", w.bucket, err)
+		}
+		if w.checkLastModified(objectAttrs) {
+			fmt.Fprintf(os.Stdout, "startCDC: Object %s modified before lastmodified time: %v, Object Updated at %v,Object Deleted at %v\n", objectAttrs.Name, w.lastModified, objectAttrs.Updated, objectAttrs.Deleted)
+			continue
+		}
+		entry := CacheEntry{
+			key:          objectAttrs.Name,
+			lastModified: objectAttrs.Updated,
+		}
+		if !objectAttrs.Deleted.IsZero() {
+			entry.deleteMarker = true
+			entry.lastModified = objectAttrs.Deleted
+		}
+		if len(cache) > 0 && cache[len(cache)-1].key == entry.key {
+			cache[len(cache)-1] = entry
+		} else {
+			cache = append(cache, entry)
+		}
+		fmt.Fprintf(os.Stdout, "startCDC: Object %s added to the cache entry with updated at %v,deleted at %v, CDC .lastModified: %v\n", objectAttrs.Name, objectAttrs.Updated, objectAttrs.Deleted, w.lastModified)
+	}
+	return cache, nil
+}
+
 // createRecord creates the record for the object fetched from GoogleCloudStorage (for updates and inserts)
 func (w *CDCIterator) createRecord(entry CacheEntry, reader *storage.Reader) (sdk.Record, error) {
 	// build record
@@ -209,4 +248,9 @@ func (w *CDCIterator) createDeletedRecord(entry CacheEntry) sdk.Record {
 		Key:       sdk.RawData(entry.key),
 		CreatedAt: entry.lastModified,
 	}
+}
+
+func (w *CDCIterator) checkLastModified(objectAttrs *storage.ObjectAttrs) bool {
+	return !((objectAttrs.Updated.After(w.lastModified) || objectAttrs.Deleted.After(w.lastModified)) || //check if the object is updated or deleted after the last modified time
+		((objectAttrs.Updated.Equal(w.lastModified) || objectAttrs.Deleted.Equal(w.lastModified)) && strings.Compare(objectAttrs.Name, w.lastEntryKey) > 0)) //If the object updated or deleted at last modified time then lexicographically check is done
 }

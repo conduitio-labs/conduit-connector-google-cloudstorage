@@ -1,3 +1,17 @@
+// Copyright © 2022 Meroxa, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package iterator
 
 import (
@@ -16,15 +30,15 @@ type SnapshotIterator struct {
 	bucket string
 	client *storage.Client
 
-	iterator        *storage.ObjectIterator
-	maxLastModified time.Time
+	iterator           *storage.ObjectIterator
+	maxLastModified    time.Time
+	maxKeyLastModified string
 }
 
 // NewSnapshotIterator takes the GoogleCloudStorage bucket, the client, and the position.
 // it returns a snapshotIterator starting from the position provided.
 func NewSnapshotIterator(ctx context.Context, bucket string, client *storage.Client, p position.Position) (*SnapshotIterator, error) {
-	logger := sdk.Logger(ctx)
-	logger.Info().Msg("NewSnapshotIterator: Starting the NewSnapshotIterator")
+	sdk.Logger(ctx).Trace().Msg("NewSnapshotIterator: Starting the NewSnapshotIterator")
 
 	iterator := client.Bucket(bucket).Objects(ctx, nil)
 	return &SnapshotIterator{
@@ -38,8 +52,8 @@ func NewSnapshotIterator(ctx context.Context, bucket string, client *storage.Cli
 // Next returns the next record in the iterator.
 // returns an empty record and an error if anything wrong happened.
 func (s *SnapshotIterator) Next(ctx context.Context) (sdk.Record, error) {
-	logger := sdk.Logger(ctx)
-	logger.Info().Msg("SnapshotIterator Next: Starting The Next Method of SnapshotIterator Iterator")
+	logger := sdk.Logger(ctx).With().Str("Class", "SnapshotIterator").Str("Method", "Next").Logger()
+	logger.Trace().Msg("Starting The Next Method of SnapshotIterator Iterator")
 
 	objectAttrs, err := s.iterator.Next()
 	if err != nil {
@@ -50,7 +64,7 @@ func (s *SnapshotIterator) Next(ctx context.Context) (sdk.Record, error) {
 	defer func(r *storage.Reader) {
 		err := r.Close()
 		if err != nil {
-			logger.Error().Msgf("SnapshotIterator Next: Error while closing the object reader %v", err)
+			logger.Error().Stack().Err(err).Msg("Error while closing the object reader")
 
 		}
 	}(objectReader)
@@ -67,6 +81,7 @@ func (s *SnapshotIterator) Next(ctx context.Context) (sdk.Record, error) {
 	// check if maxLastModified should be updated
 	if s.maxLastModified.Before(objectAttrs.Updated) {
 		s.maxLastModified = objectAttrs.Updated
+		s.maxKeyLastModified = objectAttrs.Name
 	}
 
 	p := position.Position{
