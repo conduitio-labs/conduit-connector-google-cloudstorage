@@ -5,7 +5,7 @@ go 1.18
 require (
 	cloud.google.com/go/storage v1.22.0
 	github.com/conduitio/conduit-connector-sdk v0.2.0
-	google.golang.org/api v0.75.0
+	google.golang.org/api v0.77.0
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 )
 
