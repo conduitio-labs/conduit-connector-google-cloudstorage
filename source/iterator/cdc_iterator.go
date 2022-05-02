@@ -110,7 +110,7 @@ func (w *CDCIterator) startCDC() error {
 			if err != nil {
 				return fmt.Errorf("startCDC:Error while query SetAttrSelection Bucket(%q).Objects: %w", w.bucket, err)
 			}
-			it := w.client.Bucket(w.bucket).Objects(w.tomb.Context(nil), query)
+			it := w.client.Bucket(w.bucket).Objects(w.tomb.Context(nil), query) // nolint:staticcheck // SA1012 tomb expects nil
 
 			cache, err := w.fetchCacheEntries(it)
 			if err != nil {
@@ -152,8 +152,7 @@ func (w *CDCIterator) flush() error {
 				if entry.deleteMarker {
 					output = w.createDeletedRecord(entry)
 				} else {
-
-					reader, err := w.client.Bucket(w.bucket).Object(entry.key).NewReader(w.tomb.Context(nil))
+					reader, err := w.client.Bucket(w.bucket).Object(entry.key).NewReader(w.tomb.Context(nil)) // nolint:staticcheck // SA1012 tomb expects nil
 
 					if err != nil {
 						return err
@@ -175,7 +174,7 @@ func (w *CDCIterator) flush() error {
 	}
 }
 
-//fetchCacheEntries create the slice of entries/objects based upon the lastmodified time so they should be part of CDC
+// fetchCacheEntries create the slice of entries/objects based upon the lastmodified time so they should be part of CDC
 func (w *CDCIterator) fetchCacheEntries(it *storage.ObjectIterator) ([]CacheEntry, error) {
 	cache := make([]CacheEntry, 0, 1000)
 	for {
@@ -251,6 +250,6 @@ func (w *CDCIterator) createDeletedRecord(entry CacheEntry) sdk.Record {
 }
 
 func (w *CDCIterator) checkLastModified(objectAttrs *storage.ObjectAttrs) bool {
-	return !((objectAttrs.Updated.After(w.lastModified) || objectAttrs.Deleted.After(w.lastModified)) || //check if the object is updated or deleted after the last modified time
-		((objectAttrs.Updated.Equal(w.lastModified) || objectAttrs.Deleted.Equal(w.lastModified)) && strings.Compare(objectAttrs.Name, w.lastEntryKey) > 0)) //If the object updated or deleted at last modified time then lexicographically check is done
+	return !((objectAttrs.Updated.After(w.lastModified) || objectAttrs.Deleted.After(w.lastModified)) || // check if the object is updated or deleted after the last modified time
+		((objectAttrs.Updated.Equal(w.lastModified) || objectAttrs.Deleted.Equal(w.lastModified)) && strings.Compare(objectAttrs.Name, w.lastEntryKey) > 0)) // If the object updated or deleted at last modified time then lexicographically check is done
 }

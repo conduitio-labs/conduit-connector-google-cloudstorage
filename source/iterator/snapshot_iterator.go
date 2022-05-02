@@ -65,7 +65,6 @@ func (s *SnapshotIterator) Next(ctx context.Context) (sdk.Record, error) {
 		err := r.Close()
 		if err != nil {
 			logger.Error().Stack().Err(err).Msg("Error while closing the object reader")
-
 		}
 	}(objectReader)
 

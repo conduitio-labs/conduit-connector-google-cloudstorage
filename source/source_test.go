@@ -28,7 +28,6 @@ func TestConfigureSource_FailsWhenConfigEmpty(t *testing.T) {
 
 	if !errors.Is(err, config.ErrEmptyConfig) {
 		t.Errorf("expected error to be about missing config, got %v", err)
-
 	}
 }
 
