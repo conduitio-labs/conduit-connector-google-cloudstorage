@@ -15,10 +15,8 @@
 package position
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	sdk "github.com/conduitio/conduit-connector-sdk"
@@ -29,25 +27,12 @@ const (
 	TypeCDC
 )
 
-const (
-	snapshotPrefixChar = 's'
-	cdcPrefixChar      = 'c'
-)
-
 type Type int
 
 type Position struct {
-	Key       string
-	Timestamp time.Time
-	Type      Type
-}
-
-func (p Position) ToRecordPosition() sdk.Position {
-	char := snapshotPrefixChar
-	if p.Type == TypeCDC {
-		char = cdcPrefixChar
-	}
-	return []byte(fmt.Sprintf("%s_%c%d", p.Key, char, p.Timestamp.UnixMilli()))
+	Key       string    `json:"key"`
+	Timestamp time.Time `json:"timestamp"`
+	Type      Type      `json:"type"`
 }
 
 func ParseRecordPosition(p sdk.Position) (Position, error) {
@@ -55,29 +40,17 @@ func ParseRecordPosition(p sdk.Position) (Position, error) {
 		// empty Position would have the fields with their default values
 		return Position{}, nil
 	}
-	s := string(p)
-	index := strings.LastIndex(s, "_")
-	if index == -1 {
-		return Position{}, errors.New("invalid position format, no '_' found")
-	}
-	milliseconds, err := strconv.ParseInt(s[index+2:], 10, 64)
+	result := Position{}
+	err := json.Unmarshal(p, &result)
 	if err != nil {
-		return Position{}, fmt.Errorf("could not parse the position timestamp: %w", err)
+		return Position{}, err
 	}
 
-	if s[index+1] != cdcPrefixChar && s[index+1] != snapshotPrefixChar {
-		return Position{}, fmt.Errorf("invalid position format, no '%c' or '%c' after '_'", snapshotPrefixChar, cdcPrefixChar)
-	}
-	pType := TypeSnapshot
-	if s[index+1] == cdcPrefixChar {
-		pType = TypeCDC
+	if result.Type != TypeSnapshot && result.Type != TypeCDC {
+		return Position{}, fmt.Errorf("invalid position type, no TypeSnapshot:%d or TypeCDC:%d", TypeSnapshot, TypeCDC)
 	}
 
-	return Position{
-		Key:       s[:index],
-		Timestamp: time.UnixMilli(milliseconds),
-		Type:      pType,
-	}, err
+	return result, err
 }
 
 func ConvertToCDCPosition(p sdk.Position) (sdk.Position, error) {
@@ -86,5 +59,6 @@ func ConvertToCDCPosition(p sdk.Position) (sdk.Position, error) {
 		return sdk.Position{}, err
 	}
 	cdcPos.Type = TypeCDC
-	return cdcPos.ToRecordPosition(), nil
+
+	return json.Marshal(cdcPos)
 }

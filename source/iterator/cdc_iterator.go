@@ -16,6 +16,7 @@ package iterator
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -150,10 +151,12 @@ func (w *CDCIterator) flush() error {
 				var output sdk.Record
 
 				if entry.deleteMarker {
-					output = w.createDeletedRecord(entry)
+					var err error
+					if output, err = w.createDeletedRecord(entry); err != nil {
+						return err
+					}
 				} else {
 					reader, err := w.client.Bucket(w.bucket).Object(entry.key).NewReader(w.tomb.Context(nil)) // nolint:staticcheck // SA1012 tomb expects nil
-
 					if err != nil {
 						return err
 					}
@@ -215,17 +218,20 @@ func (w *CDCIterator) createRecord(entry CacheEntry, reader *storage.Reader) (sd
 	if err != nil {
 		return sdk.Record{}, err
 	}
-	p := position.Position{
+	p, err := json.Marshal(position.Position{
 		Key:       entry.key,
 		Timestamp: entry.lastModified,
 		Type:      position.TypeCDC,
+	})
+	if err != nil {
+		return sdk.Record{}, err
 	}
 
 	return sdk.Record{
 		Metadata: map[string]string{
 			"content-type": reader.Attrs.ContentType,
 		},
-		Position:  p.ToRecordPosition(),
+		Position:  p,
 		Payload:   sdk.RawData(rawBody),
 		Key:       sdk.RawData(entry.key),
 		CreatedAt: reader.Attrs.LastModified,
@@ -233,20 +239,24 @@ func (w *CDCIterator) createRecord(entry CacheEntry, reader *storage.Reader) (sd
 }
 
 // createDeletedRecord creates the record for the object fetched from GoogleCloudStorage bucket (for deletes)
-func (w *CDCIterator) createDeletedRecord(entry CacheEntry) sdk.Record {
-	p := position.Position{
+func (w *CDCIterator) createDeletedRecord(entry CacheEntry) (sdk.Record, error) {
+	p, err := json.Marshal(position.Position{
 		Key:       entry.key,
 		Timestamp: entry.lastModified,
 		Type:      position.TypeCDC,
+	})
+	if err != nil {
+		return sdk.Record{}, err
 	}
+
 	return sdk.Record{
 		Metadata: map[string]string{
 			"action": "delete",
 		},
-		Position:  p.ToRecordPosition(),
+		Position:  p,
 		Key:       sdk.RawData(entry.key),
 		CreatedAt: entry.lastModified,
-	}
+	}, nil
 }
 
 func (w *CDCIterator) checkLastModified(objectAttrs *storage.ObjectAttrs) bool {

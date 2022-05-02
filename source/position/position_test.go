@@ -17,7 +17,6 @@ package position
 import (
 	"bytes"
 	"testing"
-	"time"
 
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
@@ -32,11 +31,10 @@ func Test_ParseRecordPosition(t *testing.T) {
 		{
 			name:    "zero position",
 			wantErr: false,
-			in:      []byte("test_s0"),
+			in:      []byte("{\"key\":\"test\",\"timestamp\":\"0001-01-01T00:00:00Z\",\"type\":0}"),
 			out: Position{
-				Key:       "test",
-				Type:      TypeSnapshot,
-				Timestamp: time.UnixMilli(0),
+				Key:  "test",
+				Type: TypeSnapshot,
 			},
 		},
 		{
@@ -54,23 +52,22 @@ func Test_ParseRecordPosition(t *testing.T) {
 		{
 			name:    "cdc type position",
 			wantErr: false,
-			in:      []byte("test_c59"),
+			in:      []byte("{\"key\":\"test\",\"timestamp\":\"0001-01-01T00:00:00Z\",\"type\":1}"),
 			out: Position{
-				Key:       "test",
-				Type:      TypeCDC,
-				Timestamp: time.UnixMilli(59),
+				Key:  "test",
+				Type: TypeCDC,
 			},
 		},
 		{
 			name:    "invalid timestamp returns error",
 			wantErr: true,
-			in:      []byte("test_88invalid"),
+			in:      []byte("{\"key\":\"test\",\"timestamp\":\"invalid\",\"type\":1}"),
 			out:     Position{},
 		},
 		{
-			name:    "invalid prefix character",
+			name:    "invalid type",
 			wantErr: true,
-			in:      []byte("test_a59"),
+			in:      []byte("{\"key\":\"test\",\"timestamp\":\"0001-01-01T00:00:00Z\",\"type\":2}"),
 			out:     Position{},
 		},
 	}
@@ -79,55 +76,9 @@ func Test_ParseRecordPosition(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p, err := ParseRecordPosition(tt.in)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ParseRecordPosition() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ParseRecordPosition() name: %s\n error = %v, wantErr %v", tt.name, err, tt.wantErr)
 			} else if p != tt.out {
-				t.Errorf("ParseRecordPosition(): Got : %v,Expected : %v", p, tt.out)
-			}
-		})
-	}
-}
-
-func Test_ToRecordPosition(t *testing.T) {
-	var positionTests = []struct {
-		name    string
-		wantErr bool
-		in      Position
-		out     sdk.Position
-	}{
-		{
-			name:    "zero position",
-			wantErr: false,
-			in: Position{
-				Key:       "test",
-				Type:      TypeSnapshot,
-				Timestamp: time.UnixMilli(0),
-			},
-			out: []byte("test_s0"),
-		},
-		{
-			name:    "empty position returns the zero value for time.Time",
-			wantErr: false,
-			in:      Position{},
-			out:     []byte("_s-62135596800000"),
-		},
-		{
-			name:    "cdc type position",
-			wantErr: false,
-			in: Position{
-				Key:       "test",
-				Type:      TypeCDC,
-				Timestamp: time.UnixMilli(59),
-			},
-			out: []byte("test_c59"),
-		},
-	}
-
-	for _, tt := range positionTests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := (tt.in).ToRecordPosition()
-			if !bytes.Equal(p, tt.out) {
-				t.Errorf("ToRecordPosition(): Got : %v,Expected : %v", p, tt.out)
-				return
+				t.Errorf("ParseRecordPosition(): name: %s\n Got : %v,Expected : %v", tt.name, p, tt.out)
 			}
 		})
 	}
@@ -143,8 +94,8 @@ func Test_ConvertSnapshotPositionToCDC(t *testing.T) {
 		{
 			name:    "convert snapshot position to cdc",
 			wantErr: false,
-			in:      []byte("test_s100"),
-			out:     []byte("test_c100"),
+			in:      []byte("{\"key\":\"test\",\"timestamp\":\"0001-01-01T00:00:00Z\",\"type\":0}"),
+			out:     []byte("{\"key\":\"test\",\"timestamp\":\"0001-01-01T00:00:00Z\",\"type\":1}"),
 		},
 		{
 			name:    "convert invalid snapshot should produce error",
@@ -158,9 +109,9 @@ func Test_ConvertSnapshotPositionToCDC(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p, err := ConvertToCDCPosition(tt.in)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ConvertToCDCPosition() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ConvertToCDCPosition() name:%s error = %v, wantErr %v", tt.name, err, tt.wantErr)
 			} else if !bytes.Equal(p, tt.out) {
-				t.Errorf("ConvertToCDCPosition(): Got : %v,Expected : %v", p, tt.out)
+				t.Errorf("ConvertToCDCPosition(): name:%s Got : %v,Expected : %v", tt.name, p, tt.out)
 			}
 		})
 	}

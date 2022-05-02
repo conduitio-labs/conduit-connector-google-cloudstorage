@@ -53,7 +53,7 @@ func NewCombinedIterator(ctx context.Context, bucket string, pollingPeriod time.
 		logger.Trace().Msg("Starting creating a New Snaphot iterator")
 
 		if len(p.Key) != 0 {
-			logger.Warn().Msgf("got position: %s, snapshot will be restarted from the beginning of the bucket\n", p.ToRecordPosition())
+			logger.Warn().Msgf("got position: %v, snapshot will be restarted from the beginning of the bucket\n", p)
 		}
 
 		p = position.Position{} // always start snapshot from the beginning, so position is nil

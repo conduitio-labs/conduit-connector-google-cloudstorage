@@ -16,6 +16,7 @@ package iterator
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"time"
@@ -83,10 +84,15 @@ func (s *SnapshotIterator) Next(ctx context.Context) (sdk.Record, error) {
 		s.maxKeyLastModified = objectAttrs.Name
 	}
 
-	p := position.Position{
+	p, err := json.Marshal(position.Position{
 		Key:       objectAttrs.Name,
 		Type:      position.TypeSnapshot,
 		Timestamp: s.maxLastModified,
+	})
+
+	if err != nil {
+		logger.Error().Stack().Err(err).Msg("Error while marshalling the position")
+		return sdk.Record{}, err
 	}
 
 	// create the record
@@ -94,7 +100,7 @@ func (s *SnapshotIterator) Next(ctx context.Context) (sdk.Record, error) {
 		Metadata: map[string]string{
 			"content-type": objectAttrs.ContentType,
 		},
-		Position:  p.ToRecordPosition(),
+		Position:  p,
 		Payload:   sdk.RawData(ObjectData),
 		Key:       sdk.RawData(objectAttrs.Name),
 		CreatedAt: objectAttrs.Updated,

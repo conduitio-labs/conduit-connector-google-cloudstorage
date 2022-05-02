@@ -63,7 +63,7 @@ func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
 		logger.Error().Stack().Err(err).Msg("Error While Checking the Bucket Existence")
 		return err
 	}
-
+	logger.Trace().Msg("Successfully completed configuring the source connector...")
 	return nil
 }
 
