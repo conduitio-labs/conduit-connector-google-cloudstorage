@@ -243,11 +243,13 @@ func prepareIntegrationTest(t *testing.T) (*storage.Client, map[string]string) {
 
 	client, err := newGCSClient(cfg)
 	if err != nil {
-		t.Fatalf("could not create S3 client: %v", err)
+		t.Fatalf("could not create GCS client: %v", err)
 	}
 
-	bucket := "conduit-s3-source-test-" + uuid.NewString()
-	createTestGCSBucket(client, cfg[projectID], bucket)
+	bucket := "conduit-gcs-source-test-" + uuid.NewString()
+	if err := createTestGCSBucket(client, cfg[projectID], bucket); err != nil {
+		t.Fatalf("could not create test gcs client: %v", err)
+	}
 	t.Cleanup(func() {
 		clearTestGCSBucket(t, client, bucket)
 		deleteTestGCSBucket(t, client, bucket)
@@ -263,7 +265,6 @@ func newGCSClient(cfg map[string]string) (*storage.Client, error) {
 }
 
 func parseIntegrationConfig() (map[string]string, error) {
-
 	serviceAccountKey := os.Getenv("GCP_ServiceAccount_Key")
 	if serviceAccountKey == "" {
 		return map[string]string{}, errors.New("GCP_ServiceAccount_Key env var must be set")
@@ -310,7 +311,6 @@ func addObjectsToTheBucket(ctx context.Context, t *testing.T, testBucket string,
 }
 
 func clearTestGCSBucket(t *testing.T, client *storage.Client, bucket string) {
-
 	it := client.Bucket(bucket).Objects(context.Background(), nil)
 
 	for {
