@@ -20,3 +20,9 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+#env variables for the integration test
+.envrc
+
+#vscode launch files
+.vscode/*
