@@ -66,8 +66,8 @@ The config passed to `Configure` can contain the following fields.
 
 | name                  | description                                                                            | required  | example             |
 |-----------------------|----------------------------------------------------------------------------------------|-----------|---------------------|
-| `Service Account Key` | GCP service account key                                                                | yes       | "Service_Account_Key" |
-| `GCS Bucket`          | the GCSbucket name                                                                 | yes       | "bucket_name"       |
+| `serviceAccountKey` | GCP service account key in JSON                                              | yes       | "{\\"key\\":\\"value\\",....}" |
+| `bucket`          | the GCS bucket name                                                                 | yes       | "bucket_name"       |
 | `pollingPeriod`       | polling period for the CDC mode, formatted as a time.Duration string. default is "1s"  | no        | "2s", "500ms"       |
 
 
