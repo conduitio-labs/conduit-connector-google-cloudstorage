@@ -52,17 +52,6 @@ func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
 
 	s.config = sourceConfig
 
-	s.client, err = storage.NewClient(ctx, option.WithCredentialsJSON([]byte(s.config.GoogleCloudServiceAccountKey)))
-	if err != nil {
-		logger.Error().Stack().Err(err).Msg("Error While Creating the Storage Client")
-		return err
-	}
-
-	err = s.bucketExists(ctx, s.config.GoogleCloudStorageBucket)
-	if err != nil {
-		logger.Error().Stack().Err(err).Msg("Error While Checking the Bucket Existence")
-		return err
-	}
 	logger.Trace().Msg("Successfully completed configuring the source connector...")
 	return nil
 }
@@ -75,6 +64,18 @@ func (s *Source) Open(ctx context.Context, pos sdk.Position) error {
 	p, err := position.ParseRecordPosition(pos)
 	if err != nil {
 		logger.Error().Stack().Err(err).Msg("Error while parsing the record position")
+		return err
+	}
+
+	s.client, err = storage.NewClient(ctx, option.WithCredentialsJSON([]byte(s.config.GoogleCloudServiceAccountKey)))
+	if err != nil {
+		logger.Error().Stack().Err(err).Msg("Error While Creating the Storage Client")
+		return err
+	}
+
+	err = s.bucketExists(ctx, s.config.GoogleCloudStorageBucket)
+	if err != nil {
+		logger.Error().Stack().Err(err).Msg("Error While Checking the Bucket Existence")
 		return err
 	}
 
