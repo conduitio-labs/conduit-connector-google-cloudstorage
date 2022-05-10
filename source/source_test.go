@@ -49,6 +49,10 @@ func TestSource_SuccessfulSnapshot(t *testing.T) {
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
 	source := &Source{}
+	defer func() {
+		_ = source.Teardown(ctx)
+	}()
+
 	err := source.Configure(ctx, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -72,8 +76,6 @@ func TestSource_SuccessfulSnapshot(t *testing.T) {
 	if !errors.Is(err, sdk.ErrBackoffRetry) {
 		t.Fatalf("expected a BackoffRetry error, got: %v", err)
 	}
-
-	_ = source.Teardown(ctx)
 }
 
 func TestSource_SnapshotRestart(t *testing.T) {
@@ -82,6 +84,10 @@ func TestSource_SnapshotRestart(t *testing.T) {
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
 	source := &Source{}
+	defer func() {
+		_ = source.Teardown(ctx)
+	}()
+
 	err := source.Configure(ctx, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -110,7 +116,6 @@ func TestSource_SnapshotRestart(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	}
-	_ = source.Teardown(ctx)
 }
 
 func TestSource_EmptyBucket(t *testing.T) {
@@ -118,6 +123,10 @@ func TestSource_EmptyBucket(t *testing.T) {
 
 	ctx := context.Background()
 	source := &Source{}
+	defer func() {
+		_ = source.Teardown(ctx)
+	}()
+
 	err := source.Configure(ctx, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -132,7 +141,6 @@ func TestSource_EmptyBucket(t *testing.T) {
 	if !errors.Is(err, sdk.ErrBackoffRetry) {
 		t.Fatalf("expected a BackoffRetry error, got: %v", err)
 	}
-	_ = source.Teardown(ctx)
 }
 
 func TestSource_NonExistentBucket(t *testing.T) {
@@ -140,6 +148,9 @@ func TestSource_NonExistentBucket(t *testing.T) {
 	ctx := context.Background()
 
 	source := &Source{}
+	defer func() {
+		_ = source.Teardown(ctx)
+	}()
 
 	// set the bucket name to a unique uuid
 	cfg[config.ConfigKeyGCSBucket] = uuid.NewString()
@@ -154,7 +165,6 @@ func TestSource_NonExistentBucket(t *testing.T) {
 	if err == nil {
 		t.Fatal("should return an error for non existent buckets")
 	}
-	_ = source.Teardown(ctx)
 }
 
 func TestSource_StartCDCAfterEmptyBucket(t *testing.T) {
@@ -163,6 +173,10 @@ func TestSource_StartCDCAfterEmptyBucket(t *testing.T) {
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
 	source := &Source{}
+	defer func() {
+		_ = source.Teardown(ctx)
+	}()
+
 	err := source.Configure(ctx, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -191,7 +205,6 @@ func TestSource_StartCDCAfterEmptyBucket(t *testing.T) {
 	if pos.Type != position.TypeCDC {
 		t.Fatalf("expected first position after reading an empty bucket to be CDC, got: %s", obj.Position)
 	}
-	_ = source.Teardown(ctx)
 }
 
 func TestSource_CDC_ReadRecordsUpdate(t *testing.T) {
@@ -200,6 +213,10 @@ func TestSource_CDC_ReadRecordsUpdate(t *testing.T) {
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
 	source := &Source{}
+	defer func() {
+		_ = source.Teardown(ctx)
+	}()
+
 	err := source.Configure(ctx, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -239,8 +256,6 @@ func TestSource_CDC_ReadRecordsUpdate(t *testing.T) {
 	if strings.Compare(string(obj.Key.Bytes()), testFileName) != 0 {
 		t.Fatalf("expected key: %s, got: %s", testFileName, string(obj.Key.Bytes()))
 	}
-
-	_ = source.Teardown(ctx)
 }
 
 func TestSource_CDC_ReadRecordsInsert(t *testing.T) {
@@ -249,6 +264,10 @@ func TestSource_CDC_ReadRecordsInsert(t *testing.T) {
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
 	source := &Source{}
+	defer func() {
+		_ = source.Teardown(ctx)
+	}()
+
 	err := source.Configure(ctx, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -288,8 +307,6 @@ func TestSource_CDC_ReadRecordsInsert(t *testing.T) {
 	if strings.Compare(string(obj.Key.Bytes()), testFileName) != 0 {
 		t.Fatalf("expected key: %s, got: %s", testFileName, string(obj.Key.Bytes()))
 	}
-
-	_ = source.Teardown(ctx)
 }
 
 func TestSource_CDCPosition(t *testing.T) {
@@ -298,6 +315,10 @@ func TestSource_CDCPosition(t *testing.T) {
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
 	source := &Source{}
+	defer func() {
+		_ = source.Teardown(ctx)
+	}()
+
 	err := source.Configure(ctx, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -354,7 +375,6 @@ func TestSource_CDCPosition(t *testing.T) {
 	if strings.Compare(obj2.Metadata["action"], expectedAction) != 0 {
 		t.Fatalf("expected action: %s, got: %s", expectedAction, obj2.Metadata["action"])
 	}
-	_ = source.Teardown(ctx)
 }
 
 func TestSource_CDC_DeleteWithVersioning(t *testing.T) {
@@ -363,6 +383,10 @@ func TestSource_CDC_DeleteWithVersioning(t *testing.T) {
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
 	source := &Source{}
+	defer func() {
+		_ = source.Teardown(ctx)
+	}()
+
 	err := source.Configure(ctx, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -405,8 +429,6 @@ func TestSource_CDC_DeleteWithVersioning(t *testing.T) {
 	if strings.Compare(obj.Metadata["action"], expectedAction) != 0 {
 		t.Fatalf("expected action: %s, got: %s", expectedAction, obj.Metadata["action"])
 	}
-
-	_ = source.Teardown(ctx)
 }
 
 func TestSource_CDC_EmptyBucketWithDeletedObjects(t *testing.T) {
@@ -415,6 +437,10 @@ func TestSource_CDC_EmptyBucketWithDeletedObjects(t *testing.T) {
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
 	source := &Source{}
+	defer func() {
+		_ = source.Teardown(ctx)
+	}()
+
 	err := source.Configure(ctx, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -452,8 +478,6 @@ func TestSource_CDC_EmptyBucketWithDeletedObjects(t *testing.T) {
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("error should be DeadlineExceeded")
 	}
-
-	_ = source.Teardown(ctx)
 }
 
 func TestConfigureSource_FailsWhenConfigEmpty(t *testing.T) {
@@ -491,6 +515,10 @@ func TestOpenSource_FailsWhenClientCreation(t *testing.T) {
 	}
 
 	source := &Source{}
+	defer func() {
+		_ = source.Teardown(ctx)
+	}()
+
 	err = source.Configure(ctx, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -511,6 +539,10 @@ func TestOpenSource_FailsParsePosition(t *testing.T) {
 
 	ctx := context.Background()
 	source := &Source{}
+	defer func() {
+		_ = source.Teardown(ctx)
+	}()
+
 	err = source.Configure(ctx, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -521,7 +553,6 @@ func TestOpenSource_FailsParsePosition(t *testing.T) {
 	if !strings.Contains(err.Error(), expectedErr) {
 		t.Errorf("Expected want error is %q but got %v", expectedErr, err)
 	}
-	_ = source.Teardown(ctx)
 }
 
 func TestOpenSource_InvalidPositionType(t *testing.T) {
@@ -533,6 +564,10 @@ func TestOpenSource_InvalidPositionType(t *testing.T) {
 	ctx := context.Background()
 
 	source := &Source{}
+	defer func() {
+		_ = source.Teardown(ctx)
+	}()
+
 	err = source.Configure(ctx, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -552,8 +587,6 @@ func TestOpenSource_InvalidPositionType(t *testing.T) {
 	if !strings.Contains(err.Error(), expectedErr) {
 		t.Errorf("Expected want error is %q but got %v", expectedErr, err)
 	}
-
-	_ = source.Teardown(ctx)
 }
 
 func TestTeardownSource_NoOpen(t *testing.T) {
