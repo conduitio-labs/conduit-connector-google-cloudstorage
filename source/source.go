@@ -115,17 +115,17 @@ func (s *Source) Teardown(ctx context.Context) error {
 	logger := sdk.Logger(ctx).With().Str("Class", "Source").Str("Method", "Teardown").Logger()
 	logger.Trace().Msg("Starting Teardown the Source Connector...")
 
+	if s.combinedIterator != nil {
+		s.combinedIterator.Stop()
+		s.combinedIterator = nil
+	}
+
 	if s.client != nil {
 		err := s.client.Close()
 		if err != nil {
 			logger.Error().Stack().Err(err).Msg("Error While Closing the Storage Client")
 			return err
 		}
-	}
-
-	if s.combinedIterator != nil {
-		s.combinedIterator.Stop()
-		s.combinedIterator = nil
 	}
 
 	logger.Trace().Msg("Successfully Teardown the Source Connector...")

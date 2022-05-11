@@ -17,4 +17,8 @@ jobs:
           go-version: 1.18
 
       - name: Test
+        env:
+            GCP_ServiceAccount_Key: ${{ secrets.GCP_ServiceAccount_Key }}
+            GCP_ProjectID: ${{ secrets.GCP_ProjectID }}
+            GCP_Bucket: conduit-gcs-testing
         run: make test GOTEST_FLAGS="-v -count=1"
