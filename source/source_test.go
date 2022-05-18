@@ -309,6 +309,62 @@ func TestSource_CDC_ReadRecordsInsert(t *testing.T) {
 	}
 }
 
+func TestSource_CDC_ReadRecordsInsertContextCancellation(t *testing.T) {
+	client, cfg := prepareIntegrationTest(t)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	testBucket := cfg[config.ConfigKeyGCSBucket]
+	source := &Source{}
+	defer func() {
+		_ = source.Teardown(ctx)
+	}()
+
+	err := source.Configure(ctx, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = source.Open(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testFiles := addObjectsToTheBucket(ctx, t, testBucket, client, 3)
+
+	// read and assert
+	for _, file := range testFiles {
+		_, err := readAndAssert(ctx, t, source, file)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	}
+
+	// make sure the update action has a different lastModifiedDate
+	// because CDC iterator detects files from after maxLastModifiedDate by initial load
+	time.Sleep(time.Second)
+
+	content := uuid.NewString()
+	testFileName := "test-file"
+	// insert a file to the bucket
+	wc := client.Bucket(testBucket).Object(testFileName).NewWriter(ctx)
+	fmt.Fprint(wc, content)
+	wc.Close()
+
+	obj, err := readWithTimeout(ctx, source, time.Second*15)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// the insert should have been detected
+	if strings.Compare(string(obj.Key.Bytes()), testFileName) != 0 {
+		t.Fatalf("expected key: %s, got: %s", testFileName, string(obj.Key.Bytes()))
+	}
+
+	cancel()
+	if _, err := source.Read(ctx); !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected error: %v, got: %v", context.Canceled, err)
+	}
+}
+
 func TestSource_CDC_ReadRecordsInsertAfterTeardown(t *testing.T) {
 	client, cfg := prepareIntegrationTest(t)
 
