@@ -190,7 +190,7 @@ func (w *CDCIterator) fetchCacheEntries(it *storage.ObjectIterator) ([]CacheEntr
 			return cache, fmt.Errorf("startCDC: Bucket(%q).Objects: %v", w.bucket, err)
 		}
 		if w.checkLastModified(objectAttrs) {
-			fmt.Fprintf(os.Stdout, "startCDC: Object %s modified before lastmodified time: %v, Object Updated at %v,Object Deleted at %v\n", objectAttrs.Name, w.lastModified, objectAttrs.Updated, objectAttrs.Deleted)
+			// fmt.Fprintf(os.Stdout, "startCDC: Object %s modified before lastmodified time: %v, Object Updated at %v,Object Deleted at %v\n", objectAttrs.Name, w.lastModified, objectAttrs.Updated, objectAttrs.Deleted)
 			continue
 		}
 		entry := CacheEntry{
@@ -206,7 +206,7 @@ func (w *CDCIterator) fetchCacheEntries(it *storage.ObjectIterator) ([]CacheEntr
 		} else {
 			cache = append(cache, entry)
 		}
-		fmt.Fprintf(os.Stdout, "startCDC: Object %s added to the cache entry with updated at %v,deleted at %v, CDC .lastModified: %v\n", objectAttrs.Name, objectAttrs.Updated, objectAttrs.Deleted, w.lastModified)
+		// fmt.Fprintf(os.Stdout, "startCDC: Object %s added to the cache entry with updated at %v,deleted at %v, CDC .lastModified: %v\n", objectAttrs.Name, objectAttrs.Updated, objectAttrs.Deleted, w.lastModified)
 	}
 	return cache, nil
 }

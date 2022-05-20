@@ -16,6 +16,7 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"cloud.google.com/go/storage"
@@ -93,17 +94,22 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 	logger := sdk.Logger(ctx).With().Str("Class", "Source").Str("Method", "Read").Logger()
 	logger.Trace().Msg("Starting Read of the Source Connector...")
 
-	r, err := s.combinedIterator.Next(ctx)
+	if s.combinedIterator != nil {
+		r, err := s.combinedIterator.Next(ctx)
 
-	if err == iterator.ErrDone {
-		logger.Debug().Msg("combined iterator fetched complete records")
-		return sdk.Record{}, sdk.ErrBackoffRetry
-	} else if err != nil {
-		logger.Error().Stack().Err(err).Msg("Error while fetching the records")
-		return sdk.Record{}, err
+		if err == iterator.ErrDone {
+			logger.Debug().Msg("combined iterator fetched complete records")
+			return sdk.Record{}, sdk.ErrBackoffRetry
+		} else if err != nil {
+			logger.Error().Stack().Err(err).Msg("Error while fetching the records")
+			return sdk.Record{}, err
+		}
+		logger.Trace().Msg("Successfully completed Read of the Source Connector...")
+		return r, nil
 	}
-	logger.Trace().Msg("Successfully completed Read of the Source Connector...")
-	return r, nil
+	err := errors.New("combined iterator is not initialized")
+	logger.Error().Stack().Err(err)
+	return sdk.Record{}, err
 }
 
 func (s *Source) Ack(ctx context.Context, position sdk.Position) error {
