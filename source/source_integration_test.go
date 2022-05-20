@@ -1,3 +1,16 @@
+// Copyright © 2022 Meroxa, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 package source
 
 import (
@@ -246,7 +259,6 @@ func TestSource_CDC_ReadRecordsUpdate(t *testing.T) {
 	if strings.Compare(string(obj.Payload.Bytes()), content) != 0 {
 		t.Fatalf("expected Payload: %s, got: %s", content, string(obj.Payload.Bytes()))
 	}
-
 }
 
 func TestSource_CDC_ReadRecordsInsert(t *testing.T) {
