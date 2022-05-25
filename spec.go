@@ -16,12 +16,19 @@ package connector
 
 import (
 	"github.com/conduitio/conduit-connector-google-cloudstorage/config"
+	"github.com/conduitio/conduit-connector-google-cloudstorage/source"
 	sourceConfig "github.com/conduitio/conduit-connector-google-cloudstorage/source/config"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
+var Connector = sdk.Connector{
+	NewSpecification: specification,
+	NewSource:        source.NewSource,
+	NewDestination:   nil,
+}
+
 // Specification returns the connector's specification.
-func Specification() sdk.Specification {
+func specification() sdk.Specification {
 	return sdk.Specification{
 		Name:        "Google Cloud Storage",
 		Summary:     "An Google Cloud Storage Source and Destination Connector for Conduit, Written in Go.",
