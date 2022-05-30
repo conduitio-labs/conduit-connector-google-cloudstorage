@@ -16,7 +16,6 @@ package connector
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"cloud.google.com/go/storage"
@@ -38,8 +37,12 @@ func (d GCSAcceptanceTestDriver) WriteToSource(t *testing.T, records []sdk.Recor
 	testBucket := d.SourceConfig(t)[config.ConfigKeyGCSBucket]
 	for _, record := range records {
 		wc := d.GCSClient.Bucket(testBucket).Object(string(record.Key.Bytes())).NewWriter(ctx)
-		fmt.Fprint(wc, string(record.Payload.Bytes()))
-		if err := wc.Close(); err != nil {
+		defer func() {
+			if err := wc.Close(); err != nil {
+				t.Fatal(err)
+			}
+		}()
+		if _, err := wc.Write(record.Payload.Bytes()); err != nil {
 			t.Fatal(err)
 		}
 	}

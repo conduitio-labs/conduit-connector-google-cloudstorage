@@ -27,7 +27,7 @@ var Connector = sdk.Connector{
 	NewDestination:   nil,
 }
 
-// Specification returns the connector's specification.
+// specification returns the connector's specification.
 func specification() sdk.Specification {
 	return sdk.Specification{
 		Name:        "Google Cloud Storage",
