@@ -109,7 +109,7 @@ func TestSource_SnapshotStartFromNonNilPosition(t *testing.T) {
 
 	// read and assert
 	for _, file := range testFiles {
-		// first position is not nil, then snapshot will start from beginning
+		// snapshot will start again from beginning if the Position.Type is Snapshot But the Position.Key is not Empty.
 		_, err := readAndAssert(ctx, t, source, file)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -243,8 +243,7 @@ func TestSource_CDC_ReadRecordsUpdate(t *testing.T) {
 	testFileName := "file0000" // already exists in the bucket
 
 	wc := client.Bucket(testBucket).Object(testFileName).NewWriter(ctx)
-	fmt.Fprint(wc, content)
-	wc.Close()
+	writeAndClose(t, wc, content)
 
 	obj, err := readWithTimeout(ctx, source, time.Second*10)
 	if err != nil {
@@ -298,8 +297,7 @@ func TestSource_CDC_ReadRecordsInsert(t *testing.T) {
 	testFileName := "test-file"
 	// insert a file to the bucket
 	wc := client.Bucket(testBucket).Object(testFileName).NewWriter(ctx)
-	fmt.Fprint(wc, content)
-	wc.Close()
+	writeAndClose(t, wc, content)
 
 	obj, err := readWithTimeout(ctx, source, time.Second*15)
 	if err != nil {
@@ -353,8 +351,7 @@ func TestSource_CDC_ReadRecordsInsertContextCancellation(t *testing.T) {
 	testFileName := "test-file"
 	// insert a file to the bucket
 	wc := client.Bucket(testBucket).Object(testFileName).NewWriter(ctx)
-	fmt.Fprint(wc, content)
-	wc.Close()
+	writeAndClose(t, wc, content)
 
 	obj, err := readWithTimeout(ctx, source, time.Second*15)
 	if err != nil {
@@ -405,8 +402,7 @@ func TestSource_CDCRestart(t *testing.T) {
 	testFileName := "test-file"
 	// insert a file to the bucket
 	wc := client.Bucket(testBucket).Object(testFileName).NewWriter(ctx)
-	fmt.Fprint(wc, content)
-	wc.Close()
+	writeAndClose(t, wc, content)
 
 	obj, err := readWithTimeout(ctx, source, time.Second*15)
 	if err != nil {
@@ -445,8 +441,7 @@ func TestSource_CDCRestart(t *testing.T) {
 	testFileName = "test-file1"
 	// insert a file to the bucket
 	wc = client.Bucket(testBucket).Object(testFileName).NewWriter(ctx)
-	fmt.Fprint(wc, content)
-	wc.Close()
+	writeAndClose(t, wc, content)
 
 	obj, err = readWithTimeout(ctx, source1, time.Second*15)
 	if err != nil {
@@ -792,8 +787,7 @@ func addObjectsToTheBucket(ctx context.Context, t *testing.T, testBucket string,
 		}
 
 		wc := client.Bucket(testBucket).Object(key).NewWriter(ctx)
-		fmt.Fprint(wc, content)
-		wc.Close()
+		writeAndClose(t, wc, content)
 	}
 	return testFiles
 }
@@ -869,4 +863,15 @@ func readAndAssert(ctx context.Context, t *testing.T, source *Source, want Objec
 		t.Fatalf("unexpected error: %v", err)
 	}
 	return got, err
+}
+
+func writeAndClose(t *testing.T, w *storage.Writer, data string) {
+	defer func() {
+		if err := w.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}()
+	if _, err := fmt.Fprint(w, data); err != nil {
+		t.Fatal(err)
+	}
 }

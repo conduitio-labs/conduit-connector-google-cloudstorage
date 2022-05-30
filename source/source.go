@@ -122,7 +122,7 @@ func (s *Source) Teardown(ctx context.Context) error {
 	logger.Trace().Msg("Starting Teardown the Source Connector...")
 
 	if s.combinedIterator != nil {
-		s.combinedIterator.Stop()
+		s.combinedIterator.Stop(ctx)
 		s.combinedIterator = nil
 	}
 
