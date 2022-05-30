@@ -14,12 +14,10 @@ before you run all the tests. If not set, the tests that use these variables wil
 
 Cases/Scenarios which are dependent on GCS Error response and where these can't be reproducible are ignored in the test cases.
  
-Integration test cases are written to cover all of the scenarios of snapshot and cdc iterators except when tomb dead as it happens only in the above mentioned case.
- 
 ## GCS Source
 
-The Google Cloud Storage Source Connector connects to a GCS bucket with the provided configurations, using serviceAccountKey(`JSON`) and bucket(`BucketName`) details . Then will call `Configure` to parse the
-configurations. After that, the
+The Google Cloud Storage Source Connector connects to a GCS bucket using `serviceAccountKey` and `bucket` details from the configurations. Then will call `Configure` to parse the configurations. 
+After that, the
 `Open` method is called to make sure the bucket exists and to start the connection from the provided position. If the bucket doesn't exist, or the permissions fail, then an error will occur.
 
 ### Change Data Capture (CDC)
@@ -31,7 +29,7 @@ are then inserted into a buffer that is checked on each Read request.
 * To capture "delete" actions, the GCS bucket versioning must be enabled.
 * To capture "insert" or "update" actions, the bucket versioning doesn't matter.
 
-If the object as "N" versions in a bucket only the live version is considered as a Record.
+If the object has multiple versions in a bucket, then only the live version is considered as a Record.
 
 #### Position Handling
 
@@ -76,8 +74,8 @@ The config passed to `Configure` can contain the following fields.
 | `bucket`          | the GCS bucket name                                                                 | yes       | "bucket_name"       |
 | `pollingPeriod`       | polling period for the CDC mode, formatted as a time.Duration string. default is "1s"  | no        | "2s", "500ms"       |
 
-When testing from the swagger or any rest client provide the stringified value in `serviceAccountKey`
-Example: console.log(JSON.stringify(JSON.stringify(key file content))) run in the JavaScript to get the preferred stringified value because wrapping JSON around the single quotes is not accepted in swagger OR
+When testing using swagger or any rest client, provide the JSON stringified value in `serviceAccountKey`
+Example: `console.log(JSON.stringify(JSON.stringify(key file content)))` run this JavaScript command to get the preferred stringified value. because wrapping JSON with single quotes is not accepted in swagger OR
 Refer to the above example provided in the table.
 
 ### Known Limitations
