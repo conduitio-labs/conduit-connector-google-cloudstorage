@@ -123,7 +123,6 @@ func (s *Source) Teardown(ctx context.Context) error {
 
 	if s.combinedIterator != nil {
 		s.combinedIterator.Stop(ctx)
-		s.combinedIterator = nil
 	}
 
 	if s.client != nil {

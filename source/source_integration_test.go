@@ -496,8 +496,8 @@ func TestSource_CDCPositionToCaptureInsertandDeleteActions(t *testing.T) {
 	}
 	_, err = source.Read(ctx)
 	// error is expected after resetting the connector with a new CDC position
-	if err == nil {
-		t.Fatalf("GCS connector should return a BackoffRetry error for the first Read() call after starting CDC")
+	if !errors.Is(err, sdk.ErrBackoffRetry) {
+		t.Fatalf("GCS connector should return a BackoffRetry error for the first Read() call after starting CDC, Instead the returned Error:%v", err)
 	}
 
 	obj, err := readWithTimeout(ctx, source, time.Second*10)
