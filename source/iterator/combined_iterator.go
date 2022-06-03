@@ -141,8 +141,8 @@ func (c *CombinedIterator) switchToCDCIterator(ctx context.Context) error {
 	return nil
 }
 
-func (c *CombinedIterator) Stop() {
+func (c *CombinedIterator) Stop(ctx context.Context) {
 	if c.cdcIterator != nil {
-		c.cdcIterator.Stop()
+		c.cdcIterator.Stop(ctx)
 	}
 }

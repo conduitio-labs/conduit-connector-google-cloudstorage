@@ -5,6 +5,7 @@ go 1.18
 require (
 	cloud.google.com/go/storage v1.22.1
 	github.com/conduitio/conduit-connector-sdk v0.2.0
+	github.com/google/uuid v1.3.0
 	google.golang.org/api v0.82.0
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 )
@@ -19,7 +20,6 @@ require (
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
-	github.com/google/uuid v1.1.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.4.0 // indirect
 	github.com/googleapis/go-type-adapters v1.0.0 // indirect
 	github.com/hashicorp/go-hclog v1.2.0 // indirect

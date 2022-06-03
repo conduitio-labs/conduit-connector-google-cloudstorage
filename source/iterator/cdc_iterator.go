@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"sort"
 	"strings"
 	"time"
@@ -90,10 +89,16 @@ func (w *CDCIterator) Next(ctx context.Context) (sdk.Record, error) {
 	}
 }
 
-func (w *CDCIterator) Stop() {
+func (w *CDCIterator) Stop(ctx context.Context) {
+	logger := sdk.Logger(ctx).With().Str("Class", "CDCIterator").Str("Method", "Stop").Logger()
+	logger.Trace().Msg("Starting Stop Method of CDCIterator ...")
+
 	// stop the two goRoutines
 	w.ticker.Stop()
 	w.tomb.Kill(errors.New("cdc iterator is stopped"))
+	<-w.tomb.Dead()
+
+	logger.Trace().Msg("Successfully Stopped the CDCIterator ...")
 }
 
 // startCDC scans the GoogleCloudStorage bucket every polling period for changes
@@ -183,13 +188,13 @@ func (w *CDCIterator) fetchCacheEntries(it *storage.ObjectIterator) ([]CacheEntr
 	for {
 		objectAttrs, err := it.Next()
 		if err == iterator.Done {
-			fmt.Fprint(os.Stdout, "startCDC: iterator.Done\n")
+			// Done iterating all the objects in the bucket
 			break
 		} else if err != nil {
 			return cache, fmt.Errorf("startCDC: Bucket(%q).Objects: %v", w.bucket, err)
 		}
 		if w.checkLastModified(objectAttrs) {
-			fmt.Fprintf(os.Stdout, "startCDC: Object %s modified before lastmodified time: %v, Object Updated at %v,Object Deleted at %v\n", objectAttrs.Name, w.lastModified, objectAttrs.Updated, objectAttrs.Deleted)
+			// Object got modified before lastmodified time
 			continue
 		}
 		entry := CacheEntry{
@@ -205,7 +210,7 @@ func (w *CDCIterator) fetchCacheEntries(it *storage.ObjectIterator) ([]CacheEntr
 		} else {
 			cache = append(cache, entry)
 		}
-		fmt.Fprintf(os.Stdout, "startCDC: Object %s added to the cache entry with updated at %v,deleted at %v, CDC .lastModified: %v\n", objectAttrs.Name, objectAttrs.Updated, objectAttrs.Deleted, w.lastModified)
+		// Object is added to the cache entry
 	}
 	return cache, nil
 }

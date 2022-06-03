@@ -17,6 +17,7 @@ package source
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/conduitio/conduit-connector-google-cloudstorage/config"
@@ -24,7 +25,8 @@ import (
 
 func TestConfigureSource_FailsWhenConfigEmpty(t *testing.T) {
 	con := Source{}
-	err := con.Configure(context.Background(), make(map[string]string))
+	ctx := context.Background()
+	err := con.Configure(ctx, make(map[string]string))
 
 	if !errors.Is(err, config.ErrEmptyConfig) {
 		t.Errorf("expected error to be about missing config, got %v", err)
@@ -33,7 +35,8 @@ func TestConfigureSource_FailsWhenConfigEmpty(t *testing.T) {
 
 func TestConfigureSource_FailsWhenConfigInvalid(t *testing.T) {
 	con := Source{}
-	err := con.Configure(context.Background(), map[string]string{"foobar": "foobar"})
+	ctx := context.Background()
+	err := con.Configure(ctx, map[string]string{"foobar": "foobar"})
 
 	if errors.Is(err, config.RequiredConfigErr(config.ConfigKeyGCPServiceAccountKey)) {
 		t.Errorf("expected error serviceAccountKey config value must be set, got %v", err)
@@ -46,5 +49,15 @@ func TestTeardownSource_NoOpen(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("expected no error but, got %v", err)
+	}
+}
+
+func TestSource_ReadWithNilCombinedIterator(t *testing.T) {
+	con := NewSource()
+	_, err := con.Read(context.Background())
+	value := "combined iterator is not initialized"
+
+	if strings.Compare(err.Error(), value) != 0 {
+		t.Errorf("Expected: %v but Got: %v", value, err.Error())
 	}
 }
