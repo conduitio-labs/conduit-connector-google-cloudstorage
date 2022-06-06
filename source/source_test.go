@@ -52,10 +52,10 @@ func TestTeardownSource_NoOpen(t *testing.T) {
 	}
 }
 
-func TestSource_ReadWithNilCombinedIterator(t *testing.T) {
+func TestSource_ReadWithNilIterator(t *testing.T) {
 	con := NewSource()
 	_, err := con.Read(context.Background())
-	value := "combined iterator is not initialized"
+	value := "iterator is not initialized"
 
 	if strings.Compare(err.Error(), value) != 0 {
 		t.Errorf("Expected: %v but Got: %v", value, err.Error())

@@ -23,7 +23,7 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/conduitio/conduit-connector-google-cloudstorage/source/position"
 	sdk "github.com/conduitio/conduit-connector-sdk"
-	googleIterator "google.golang.org/api/iterator"
+	"google.golang.org/api/iterator"
 )
 
 type CombinedIterator struct {
@@ -34,8 +34,6 @@ type CombinedIterator struct {
 	pollingPeriod time.Duration
 	client        *storage.Client
 }
-
-var ErrDone = errors.New("no more items in combined iterator")
 
 func NewCombinedIterator(ctx context.Context, bucket string, pollingPeriod time.Duration, client *storage.Client, p position.Position) (*CombinedIterator, error) {
 	logger := sdk.Logger(ctx).With().Str("Method", "NewCombinedIterator").Logger()
@@ -92,19 +90,34 @@ func (c *CombinedIterator) Next(ctx context.Context) (sdk.Record, error) {
 		logger.Trace().Msg("Using the Snapshot Iterator for pulling the data")
 
 		record, err := c.snapshotIterator.Next(ctx)
-		if err == googleIterator.Done {
-			logger.Trace().Msg("Switching from snapshot to the CDC iterator")
 
+		// Empty Bucket
+		if err == iterator.Done {
+			// switch to cdc iterator
+			e := c.switchToCDCIterator(ctx)
+			if e != nil {
+				logger.Error().Stack().Err(e).Msg("Error Switching from snapshot to the CDC iterator")
+				return sdk.Record{}, e
+			}
+			return sdk.Record{}, sdk.ErrBackoffRetry
+		} else if err != nil {
+			logger.Error().Stack().Err(err).Msg("Error During the snapshot iterator")
+			return sdk.Record{}, err
+		}
+
+		if !c.snapshotIterator.HasNext(ctx) {
+			// switch to cdc iterator
 			err := c.switchToCDCIterator(ctx)
 			if err != nil {
 				logger.Error().Stack().Err(err).Msg("Error Switching from snapshot to the CDC iterator")
 				return sdk.Record{}, err
 			}
-			return c.Next(ctx)
-		} else if err != nil {
-			logger.Error().Stack().Err(err).Msg("Error During the snapshot iterator")
-
-			return sdk.Record{}, err
+			// change the last record's position to CDC
+			record.Position, err = position.ConvertToCDCPosition(record.Position)
+			if err != nil {
+				logger.Error().Stack().Err(err).Msg("Error Converting to CDC position")
+				return sdk.Record{}, err
+			}
 		}
 		logger.Trace().Msg("Successfully return the record from the snapshot iterator")
 		return record, nil

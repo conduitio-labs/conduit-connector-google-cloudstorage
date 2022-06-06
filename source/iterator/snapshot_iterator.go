@@ -108,6 +108,14 @@ func (s *SnapshotIterator) Next(ctx context.Context) (sdk.Record, error) {
 
 	return output, nil
 }
+
+func (s *SnapshotIterator) HasNext(ctx context.Context) bool {
+	if s.iterator.PageInfo().Token == "" && s.iterator.PageInfo().Remaining() == 0 {
+		return false
+	}
+	return true
+}
+
 func (s *SnapshotIterator) Stop() {
 	// nothing to stop
 }
