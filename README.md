@@ -54,7 +54,7 @@ The connector goes through two reading modes.
  actions with a _Position Timestamp_ higher than the last record returned even if the timestamp got matched then the decision would be based on lexicographical comparison, which will ensure that no duplications are in
  place.
 
- The CDC mode will start after a single action(Insert/Update/Delete) completed post snapshot.
+ The CDC mode will start after end of the snapshot item.
  
  Here the CDC mode works on the default google iterator provided by the GO SDK with a configurable pollingPeriod and it doesn't support the notifications through pub/sub because making it seperate service would be more flexible.
 
