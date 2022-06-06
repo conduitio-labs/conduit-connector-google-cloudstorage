@@ -187,7 +187,13 @@ func TestSource_SnapshotRestartAfterLastRecord(t *testing.T) {
 	// Stop the source
 	_ = source.Teardown(ctx)
 
-	// Snapshot Restart will not read all the files again instead returns ErrBackoffRetry
+	content := uuid.NewString()
+	testFileName := "test-file1"
+	// insert a file to the bucket
+	wc := client.Bucket(testBucket).Object(testFileName).NewWriter(ctx)
+	writeAndClose(t, wc, content)
+
+	// Snapshot Restart will not read all the files again instead reads only the newly added testfile
 
 	source = &Source{}
 	err = source.Configure(ctx, cfg)
@@ -200,6 +206,20 @@ func TestSource_SnapshotRestartAfterLastRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	obj, err := readWithTimeout(ctx, source, time.Second*15)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// the insert should have been detected
+	if strings.Compare(string(obj.Key.Bytes()), testFileName) != 0 {
+		t.Fatalf("expected key: %s, got: %s", testFileName, string(obj.Key.Bytes()))
+	}
+	if strings.Compare(string(obj.Payload.Bytes()), content) != 0 {
+		t.Fatalf("expected payload: %s, got: %s", content, string(obj.Payload.Bytes()))
+	}
+
+	// As there is nothing left in the bucket ErrBackoffRetry will be returned
 	_, err = source.Read(ctx)
 	if !errors.Is(err, sdk.ErrBackoffRetry) {
 		t.Fatalf("expected a BackoffRetry error, got: %v", err)
