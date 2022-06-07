@@ -57,13 +57,169 @@ func TestSource_SuccessfulSnapshot(t *testing.T) {
 	testFiles := addObjectsToTheBucket(ctx, t, testBucket, client, 5)
 
 	// read and assert
+	var record sdk.Record
 	for _, file := range testFiles {
-		_, err := readAndAssert(ctx, t, source, file)
+		record, err = readAndAssert(ctx, t, source, file)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	}
 
+	if p, err := position.ParseRecordPosition(record.Position); err != nil {
+		t.Fatal(err)
+	} else if p.Type != position.TypeCDC {
+		t.Fatalf("expected a position Type CDC, got: %v", p.Type)
+	}
+
+	_, err = source.Read(ctx)
+	if !errors.Is(err, sdk.ErrBackoffRetry) {
+		t.Fatalf("expected a BackoffRetry error, got: %v", err)
+	}
+}
+
+func TestSource_SnapshotRestart(t *testing.T) {
+	client, cfg := prepareIntegrationTest(t)
+
+	ctx := context.Background()
+	testBucket := cfg[config.ConfigKeyGCSBucket]
+	source := &Source{}
+
+	err := source.Configure(ctx, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = source.Open(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	numberOfFiles := 5
+	testFiles := addObjectsToTheBucket(ctx, t, testBucket, client, numberOfFiles)
+
+	// read and assert until last file is left
+	var record sdk.Record
+	for i := 0; i < numberOfFiles-1; i++ {
+		record, err = readAndAssert(ctx, t, source, testFiles[i])
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	}
+
+	lastReadPosition := record.Position
+	if p, err := position.ParseRecordPosition(lastReadPosition); err != nil {
+		t.Fatal(err)
+	} else if p.Type != position.TypeSnapshot {
+		t.Fatalf("expected a position Type TypeSnapshot, got: %v", p.Type)
+	}
+
+	// Stop the source
+	_ = source.Teardown(ctx)
+
+	// Snapshot Restart will read all the files again
+
+	source = &Source{}
+	err = source.Configure(ctx, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Open with lastReadPosition
+	err = source.Open(ctx, lastReadPosition)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// read and assert all the files
+	for i := 0; i < numberOfFiles; i++ {
+		record, err = readAndAssert(ctx, t, source, testFiles[i])
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	}
+
+	// As the last item reached now the poistion will be cdc
+	if p, err := position.ParseRecordPosition(record.Position); err != nil {
+		t.Fatal(err)
+	} else if p.Type != position.TypeCDC {
+		t.Fatalf("expected a position Type CDC, got: %v", p.Type)
+	}
+
+	_, err = source.Read(ctx)
+	if !errors.Is(err, sdk.ErrBackoffRetry) {
+		t.Fatalf("expected a BackoffRetry error, got: %v", err)
+	}
+}
+
+func TestSource_SnapshotRestartAfterLastRecord(t *testing.T) {
+	client, cfg := prepareIntegrationTest(t)
+
+	ctx := context.Background()
+	testBucket := cfg[config.ConfigKeyGCSBucket]
+	source := &Source{}
+
+	err := source.Configure(ctx, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = source.Open(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	numberOfFiles := 5
+	testFiles := addObjectsToTheBucket(ctx, t, testBucket, client, numberOfFiles)
+
+	// read and assert until last file is left
+	var record sdk.Record
+	for i := 0; i < numberOfFiles; i++ {
+		record, err = readAndAssert(ctx, t, source, testFiles[i])
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	}
+
+	lastReadPosition := record.Position
+	if p, err := position.ParseRecordPosition(lastReadPosition); err != nil {
+		t.Fatal(err)
+	} else if p.Type != position.TypeCDC {
+		t.Fatalf("expected a position Type TypeCDC, got: %v", p.Type)
+	}
+
+	// Stop the source
+	_ = source.Teardown(ctx)
+
+	content := uuid.NewString()
+	testFileName := "test-file1"
+	// insert a file to the bucket
+	wc := client.Bucket(testBucket).Object(testFileName).NewWriter(ctx)
+	writeAndClose(t, wc, content)
+
+	// Snapshot Restart will not read all the files again instead reads only the newly added testfile
+
+	source = &Source{}
+	err = source.Configure(ctx, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Open with lastReadPosition
+	err = source.Open(ctx, lastReadPosition)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	obj, err := readWithTimeout(ctx, source, time.Second*15)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// the insert should have been detected
+	if strings.Compare(string(obj.Key.Bytes()), testFileName) != 0 {
+		t.Fatalf("expected key: %s, got: %s", testFileName, string(obj.Key.Bytes()))
+	}
+	if strings.Compare(string(obj.Payload.Bytes()), content) != 0 {
+		t.Fatalf("expected payload: %s, got: %s", content, string(obj.Payload.Bytes()))
+	}
+
+	// As there is nothing left in the bucket ErrBackoffRetry will be returned
 	_, err = source.Read(ctx)
 	if !errors.Is(err, sdk.ErrBackoffRetry) {
 		t.Fatalf("expected a BackoffRetry error, got: %v", err)

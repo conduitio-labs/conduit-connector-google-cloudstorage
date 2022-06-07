@@ -85,7 +85,7 @@ func (w *CDCIterator) Next(ctx context.Context) (sdk.Record, error) {
 	case <-ctx.Done():
 		return sdk.Record{}, ctx.Err()
 	default:
-		return sdk.Record{}, ErrDone
+		return sdk.Record{}, sdk.ErrBackoffRetry
 	}
 }
 

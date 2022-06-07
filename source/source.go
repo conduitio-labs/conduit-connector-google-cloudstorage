@@ -30,9 +30,14 @@ import (
 // Source connector
 type Source struct {
 	sdk.UnimplementedSource
-	config           config.SourceConfig
-	client           *storage.Client
-	combinedIterator *iterator.CombinedIterator
+	config   config.SourceConfig
+	client   *storage.Client
+	iterator Iterator
+}
+
+type Iterator interface {
+	Next(ctx context.Context) (sdk.Record, error)
+	Stop(ctx context.Context)
 }
 
 func NewSource() sdk.Source {
@@ -80,7 +85,7 @@ func (s *Source) Open(ctx context.Context, pos sdk.Position) error {
 		return err
 	}
 
-	s.combinedIterator, err = iterator.NewCombinedIterator(ctx, s.config.GoogleCloudStorageBucket, s.config.PollingPeriod, s.client, p)
+	s.iterator, err = iterator.NewCombinedIterator(ctx, s.config.GoogleCloudStorageBucket, s.config.PollingPeriod, s.client, p)
 	if err != nil {
 		logger.Error().Stack().Err(err).Msg("Error while create a combined iterator")
 		return fmt.Errorf("couldn't create a combined iterator: %w", err)
@@ -94,20 +99,16 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 	logger := sdk.Logger(ctx).With().Str("Class", "Source").Str("Method", "Read").Logger()
 	logger.Trace().Msg("Starting Read of the Source Connector...")
 
-	if s.combinedIterator != nil {
-		r, err := s.combinedIterator.Next(ctx)
-
-		if err == iterator.ErrDone {
-			logger.Debug().Msg("combined iterator fetched complete records")
-			return sdk.Record{}, sdk.ErrBackoffRetry
-		} else if err != nil {
+	if s.iterator != nil {
+		r, err := s.iterator.Next(ctx)
+		if err != nil {
 			logger.Error().Stack().Err(err).Msg("Error while fetching the records")
 			return sdk.Record{}, err
 		}
 		logger.Trace().Msg("Successfully completed Read of the Source Connector...")
 		return r, nil
 	}
-	err := errors.New("combined iterator is not initialized")
+	err := errors.New("iterator is not initialized")
 	logger.Error().Stack().Err(err)
 	return sdk.Record{}, err
 }
@@ -121,8 +122,8 @@ func (s *Source) Teardown(ctx context.Context) error {
 	logger := sdk.Logger(ctx).With().Str("Class", "Source").Str("Method", "Teardown").Logger()
 	logger.Trace().Msg("Starting Teardown the Source Connector...")
 
-	if s.combinedIterator != nil {
-		s.combinedIterator.Stop(ctx)
+	if s.iterator != nil {
+		s.iterator.Stop(ctx)
 	}
 
 	if s.client != nil {
