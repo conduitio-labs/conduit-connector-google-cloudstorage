@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package source
+package connector
 
 import (
 	"context"
@@ -31,12 +31,12 @@ const (
 	projectID = "projectID"
 )
 
-func NewGCSClient(cfg map[string]string) (*storage.Client, error) {
+func newGCSClient(cfg map[string]string) (*storage.Client, error) {
 	ctx := context.Background()
 	return storage.NewClient(ctx, option.WithCredentialsJSON([]byte(cfg[config.ConfigKeyGCPServiceAccountKey])))
 }
 
-func CreateTestGCSBucket(client *storage.Client, projectID, bucketName string) error {
+func createTestGCSBucket(client *storage.Client, projectID, bucketName string) error {
 	bucket := client.Bucket(bucketName)
 	ctx := context.Background()
 	return bucket.Create(ctx, projectID, &storage.BucketAttrs{
@@ -44,7 +44,7 @@ func CreateTestGCSBucket(client *storage.Client, projectID, bucketName string) e
 	})
 }
 
-func ClearAndDeleteTestGCSBucket(t *testing.T, client *storage.Client, bucket string) {
+func clearAndDeleteTestGCSBucket(t *testing.T, client *storage.Client, bucket string) {
 	ctx := context.Background()
 	it := client.Bucket(bucket).Objects(ctx, &storage.Query{
 		Versions: true,
@@ -70,7 +70,7 @@ func ClearAndDeleteTestGCSBucket(t *testing.T, client *storage.Client, bucket st
 	}
 }
 
-func ParseIntegrationConfig() (map[string]string, error) {
+func parseIntegrationConfig() (map[string]string, error) {
 	serviceAccountKey := os.Getenv("GCP_ServiceAccount_Key")
 	if serviceAccountKey == "" {
 		return map[string]string{}, errors.New("GCP_ServiceAccount_Key env var must be set")

@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"cloud.google.com/go/storage"
-	"github.com/conduitio/conduit-connector-google-cloudstorage/source"
 	"github.com/google/uuid"
 	"go.uber.org/goleak"
 
@@ -50,12 +49,12 @@ func (d GCSAcceptanceTestDriver) WriteToSource(t *testing.T, records []sdk.Recor
 }
 
 func TestAcceptance(t *testing.T) {
-	sourceConfig, err := source.ParseIntegrationConfig()
+	sourceConfig, err := parseIntegrationConfig()
 	if err != nil {
 		t.Skip(err)
 	}
 
-	gcsClient, err := source.NewGCSClient(sourceConfig)
+	gcsClient, err := newGCSClient(sourceConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,12 +73,12 @@ func TestAcceptance(t *testing.T) {
 				DestinationConfig: nil,
 				BeforeTest: func(t *testing.T) {
 					sourceConfig[config.ConfigKeyGCSBucket] = "acceptance-test-bucket-" + uuid.NewString()
-					if err := source.CreateTestGCSBucket(gcsClient, sourceConfig["projectID"], sourceConfig[config.ConfigKeyGCSBucket]); err != nil {
+					if err := createTestGCSBucket(gcsClient, sourceConfig["projectID"], sourceConfig[config.ConfigKeyGCSBucket]); err != nil {
 						t.Fatalf("could not create test gcs bucket: %v", err)
 					}
 				},
 				AfterTest: func(t *testing.T) {
-					source.ClearAndDeleteTestGCSBucket(t, gcsClient, sourceConfig[config.ConfigKeyGCSBucket])
+					clearAndDeleteTestGCSBucket(t, gcsClient, sourceConfig[config.ConfigKeyGCSBucket])
 				},
 				// Apart from the IgnoreCurrent, runtime_pollWait is also ignorned because here the GCS/storage client(Created Above) make a gRPC connection which is consistent and opens until it is closed.
 				GoleakOptions: []goleak.Option{goleak.IgnoreCurrent(), goleak.IgnoreTopFunction("internal/poll.runtime_pollWait")},
