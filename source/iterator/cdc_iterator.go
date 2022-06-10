@@ -193,8 +193,8 @@ func (w *CDCIterator) fetchCacheEntries(it *storage.ObjectIterator) ([]CacheEntr
 		} else if err != nil {
 			return cache, fmt.Errorf("startCDC: Bucket(%q).Objects: %v", w.bucket, err)
 		}
-		if w.checkLastModified(objectAttrs) {
-			// Object got modified before lastmodified time
+		if w.checkLastModified(objectAttrs) || strings.HasSuffix(objectAttrs.Name, "/") {
+			// Object got modified before lastmodified time or it is only a folder
 			continue
 		}
 		entry := CacheEntry{

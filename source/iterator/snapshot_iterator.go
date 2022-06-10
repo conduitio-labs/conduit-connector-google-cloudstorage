@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -60,6 +61,11 @@ func (s *SnapshotIterator) Next(ctx context.Context) (sdk.Record, error) {
 	if err != nil {
 		return sdk.Record{}, err
 	}
+	// skip only folders
+	if strings.HasSuffix(objectAttrs.Name, "/") {
+		return s.Next(ctx)
+	}
+
 	// read object
 	objectReader, err := s.client.Bucket(s.bucket).Object(objectAttrs.Name).NewReader(ctx)
 	defer func(r *storage.Reader) {
