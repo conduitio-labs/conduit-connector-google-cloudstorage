@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package source
+package connector
 
 import (
 	"context"
@@ -25,6 +25,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/conduitio/conduit-connector-google-cloudstorage/config"
+	sourceConnector "github.com/conduitio/conduit-connector-google-cloudstorage/source"
 	"github.com/conduitio/conduit-connector-google-cloudstorage/source/position"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/google/uuid"
@@ -40,7 +41,7 @@ func TestSource_SuccessfulSnapshot(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &Source{}
+	source := &sourceConnector.Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -82,7 +83,7 @@ func TestSource_SnapshotRestart(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &Source{}
+	source := &sourceConnector.Source{}
 
 	err := source.Configure(ctx, cfg)
 	if err != nil {
@@ -117,7 +118,7 @@ func TestSource_SnapshotRestart(t *testing.T) {
 
 	// Snapshot Restart will read all the files again
 
-	source = &Source{}
+	source = &sourceConnector.Source{}
 	err = source.Configure(ctx, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -154,7 +155,7 @@ func TestSource_SnapshotRestartAfterLastRecord(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &Source{}
+	source := &sourceConnector.Source{}
 
 	err := source.Configure(ctx, cfg)
 	if err != nil {
@@ -195,7 +196,7 @@ func TestSource_SnapshotRestartAfterLastRecord(t *testing.T) {
 
 	// Snapshot Restart will not read all the files again instead reads only the newly added testfile
 
-	source = &Source{}
+	source = &sourceConnector.Source{}
 	err = source.Configure(ctx, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -231,7 +232,7 @@ func TestSource_SnapshotStartFromNonNilPosition(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &Source{}
+	source := &sourceConnector.Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -270,7 +271,7 @@ func TestSource_EmptyBucket(t *testing.T) {
 	_, cfg := prepareIntegrationTest(t)
 
 	ctx := context.Background()
-	source := &Source{}
+	source := &sourceConnector.Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -295,7 +296,7 @@ func TestSource_NonExistentBucket(t *testing.T) {
 	_, cfg := prepareIntegrationTest(t)
 	ctx := context.Background()
 
-	source := &Source{}
+	source := &sourceConnector.Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -320,7 +321,7 @@ func TestSource_StartCDCAfterEmptyBucket(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &Source{}
+	source := &sourceConnector.Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -360,7 +361,7 @@ func TestSource_CDC_ReadRecordsUpdate(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &Source{}
+	source := &sourceConnector.Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -414,7 +415,7 @@ func TestSource_CDC_ReadRecordsInsert(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &Source{}
+	source := &sourceConnector.Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -468,7 +469,7 @@ func TestSource_CDC_ReadRecordsInsertContextCancellation(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &Source{}
+	source := &sourceConnector.Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -523,7 +524,7 @@ func TestSource_CDCRestart(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &Source{}
+	source := &sourceConnector.Source{}
 	err := source.Configure(ctx, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -568,7 +569,7 @@ func TestSource_CDCRestart(t *testing.T) {
 	_ = source.Teardown(ctx)
 
 	// start the source process again
-	source1 := &Source{}
+	source1 := &sourceConnector.Source{}
 	defer func() {
 		_ = source1.Teardown(ctx)
 	}()
@@ -609,7 +610,7 @@ func TestSource_CDCPositionToCaptureInsertandDeleteActions(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &Source{}
+	source := &sourceConnector.Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -676,7 +677,7 @@ func TestSource_CDC_DeleteWithVersioning(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &Source{}
+	source := &sourceConnector.Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -730,7 +731,7 @@ func TestSource_CDC_EmptyBucketWithDeletedObjects(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &Source{}
+	source := &sourceConnector.Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -770,7 +771,7 @@ func TestSource_CDC_EmptyBucketWithDeletedObjects(t *testing.T) {
 	// CDC should NOT read the deleted object
 	_, err = readWithTimeout(ctx, source, time.Second)
 	if !errors.Is(err, context.DeadlineExceeded) {
-		t.Fatalf("error should be DeadlineExceeded")
+		t.Fatalf("error should be DeadlineExceeded but got %v", err)
 	}
 }
 
@@ -783,12 +784,12 @@ func TestOpenSource_FailsWhenClientCreation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg, err := ParseIntegrationConfig()
+	cfg, err := parseIntegrationConfig()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	source := &Source{}
+	source := &sourceConnector.Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -806,13 +807,13 @@ func TestOpenSource_FailsWhenClientCreation(t *testing.T) {
 }
 
 func TestOpenSource_FailsParsePosition(t *testing.T) {
-	cfg, err := ParseIntegrationConfig()
+	cfg, err := parseIntegrationConfig()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	ctx := context.Background()
-	source := &Source{}
+	source := &sourceConnector.Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -830,14 +831,14 @@ func TestOpenSource_FailsParsePosition(t *testing.T) {
 }
 
 func TestOpenSource_InvalidPositionType(t *testing.T) {
-	cfg, err := ParseIntegrationConfig()
+	cfg, err := parseIntegrationConfig()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	ctx := context.Background()
 
-	source := &Source{}
+	source := &sourceConnector.Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -864,22 +865,22 @@ func TestOpenSource_InvalidPositionType(t *testing.T) {
 }
 
 func prepareIntegrationTest(t *testing.T) (*storage.Client, map[string]string) {
-	cfg, err := ParseIntegrationConfig()
+	cfg, err := parseIntegrationConfig()
 	if err != nil {
 		t.Skip(err)
 	}
 
-	client, err := NewGCSClient(cfg)
+	client, err := newGCSClient(cfg)
 	if err != nil {
 		t.Fatalf("could not create GCS client: %v", err)
 	}
 
 	bucket := "conduit-gcs-source-test-" + uuid.NewString()
-	if err := CreateTestGCSBucket(client, cfg[projectID], bucket); err != nil {
+	if err := createTestGCSBucket(client, cfg[projectID], bucket); err != nil {
 		t.Fatalf("could not create test gcs client: %v", err)
 	}
 	t.Cleanup(func() {
-		ClearAndDeleteTestGCSBucket(t, client, bucket)
+		clearAndDeleteTestGCSBucket(t, client, bucket)
 		if err := client.Close(); err != nil {
 			t.Fatal(err)
 		}
@@ -907,7 +908,7 @@ func addObjectsToTheBucket(ctx context.Context, t *testing.T, testBucket string,
 }
 
 // readWithTimeout will try to read the next record until the timeout is reached.
-func readWithTimeout(ctx context.Context, source *Source, timeout time.Duration) (sdk.Record, error) {
+func readWithTimeout(ctx context.Context, source *sourceConnector.Source, timeout time.Duration) (sdk.Record, error) {
 	timeoutTimer := time.After(timeout)
 
 	for {
@@ -927,7 +928,7 @@ func readWithTimeout(ctx context.Context, source *Source, timeout time.Duration)
 
 // readAndAssert will read the next record and assert that the returned record is
 // the same as the wanted object.
-func readAndAssert(ctx context.Context, t *testing.T, source *Source, want Object) (sdk.Record, error) {
+func readAndAssert(ctx context.Context, t *testing.T, source *sourceConnector.Source, want Object) (sdk.Record, error) {
 	got, err := source.Read(ctx)
 	if err != nil {
 		return got, err
