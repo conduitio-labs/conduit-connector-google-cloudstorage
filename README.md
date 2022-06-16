@@ -78,6 +78,10 @@ When testing using swagger or any rest client, provide the JSON stringified valu
 Example: `console.log(JSON.stringify(JSON.stringify(key file content)))` run this JavaScript command to get the preferred stringified value. because wrapping JSON with single quotes is not accepted in swagger OR
 Refer to the above example provided in the table.
 
+### Observations
+
+* Everything in the bucket is an object, But there is a differentiation like folders(object name ending with a slash) or files only for the visual representation in the GCS console. But in the back-end, there is no metadata to identify the differentiation. So we consider all the objects in the bucket irrespective of object name and size.
+
 ### Known Limitations
 
 * If a pipeline restarts during the snapshot, then the connector will start scanning the objects from the beginning of
