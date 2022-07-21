@@ -3,7 +3,7 @@ module github.com/conduitio/conduit-connector-google-cloudstorage
 go 1.18
 
 require (
-	cloud.google.com/go/storage v1.23.0
+	cloud.google.com/go/storage v1.24.0
 	github.com/conduitio/conduit-connector-sdk v0.2.1-0.20220512151626-07c8c0b907bf
 	github.com/google/uuid v1.3.0
 	go.uber.org/goleak v1.1.12
@@ -22,7 +22,6 @@ require (
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.1.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.4.0 // indirect
-	github.com/googleapis/go-type-adapters v1.0.0 // indirect
 	github.com/hashicorp/go-hclog v1.2.0 // indirect
 	github.com/hashicorp/go-plugin v1.4.3 // indirect
 	github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87 // indirect
