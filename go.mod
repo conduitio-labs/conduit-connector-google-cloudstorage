@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/storage v1.26.0
 	github.com/conduitio/conduit-connector-sdk v0.2.1-0.20220512151626-07c8c0b907bf
 	github.com/google/uuid v1.3.0
-	go.uber.org/goleak v1.1.12
+	go.uber.org/goleak v1.2.0
 	google.golang.org/api v0.95.0
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 )
