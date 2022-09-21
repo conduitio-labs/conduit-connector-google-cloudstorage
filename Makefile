@@ -1,7 +1,9 @@
 .PHONY: build test test-integration
 
+VERSION=$(shell git describe --tags --dirty --always)
+
 build:
-	go build -o conduit-connector-google-cloudstorage cmd/connector/main.go
+	go build -ldflags "-X 'github.com/conduitio-labs/conduit-connector-google-cloudstorage.version=${VERSION}'" -o conduit-connector-google-cloudstorage cmd/connector/main.go
 
 test:
 	go test $(GOTEST_FLAGS) -v -race ./...
