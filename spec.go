@@ -27,13 +27,18 @@ var Connector = sdk.Connector{
 	NewDestination:   nil,
 }
 
+// version is set during the build process (i.e. the Makefile).
+// It follows Go's convention for module version, where the version
+// starts with the letter v, followed by a semantic version.
+var version = "v0.0.0-dev"
+
 // specification returns the connector's specification.
 func specification() sdk.Specification {
 	return sdk.Specification{
 		Name:        "Google Cloud Storage",
 		Summary:     "An Google Cloud Storage Source and Destination Connector for Conduit, Written in Go.",
 		Description: "Real time data transmission with google cloud storage",
-		Version:     "v0.1.0",
+		Version:     version,
 		Author:      "Santosh Kumar Gajawada",
 		SourceParams: map[string]sdk.Parameter{
 			config.ConfigKeyGCPServiceAccountKey: {
