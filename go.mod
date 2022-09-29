@@ -1,4 +1,4 @@
-module github.com/conduitio/conduit-connector-google-cloudstorage
+module github.com/conduitio-labs/conduit-connector-google-cloudstorage
 
 go 1.18
 
@@ -16,23 +16,22 @@ require (
 	cloud.google.com/go/compute v1.7.0 // indirect
 	cloud.google.com/go/iam v0.3.0 // indirect
 	github.com/conduitio/conduit-connector-protocol v0.2.0 // indirect
-	github.com/fatih/color v1.13.0 // indirect
-	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/fatih/color v1.7.0 // indirect
+	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.1.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.4.0 // indirect
 	github.com/googleapis/go-type-adapters v1.0.0 // indirect
-	github.com/hashicorp/go-hclog v1.2.0 // indirect
+	github.com/hashicorp/go-hclog v0.14.1 // indirect
 	github.com/hashicorp/go-plugin v1.4.3 // indirect
-	github.com/hashicorp/yamux v0.0.0-20211028200310-0bc27b27de87 // indirect
-	github.com/jhump/protoreflect v1.10.2-0.20220118162304-602a8db873e3 // indirect
+	github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/matryer/is v1.4.0 // indirect
-	github.com/mattn/go-colorable v0.1.12 // indirect
-	github.com/mattn/go-isatty v0.0.14 // indirect
-	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
-	github.com/oklog/run v1.1.0 // indirect
+	github.com/mattn/go-colorable v0.1.4 // indirect
+	github.com/mattn/go-isatty v0.0.10 // indirect
+	github.com/mitchellh/go-testing-interface v1.0.0 // indirect
+	github.com/oklog/run v1.0.0 // indirect
 	github.com/rs/zerolog v1.26.1 // indirect
 	go.buf.build/library/go-grpc/conduitio/conduit-connector-protocol v1.4.1 // indirect
 	go.opencensus.io v0.23.0 // indirect

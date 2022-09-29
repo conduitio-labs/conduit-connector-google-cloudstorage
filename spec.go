@@ -15,9 +15,9 @@
 package connector
 
 import (
-	"github.com/conduitio/conduit-connector-google-cloudstorage/config"
-	"github.com/conduitio/conduit-connector-google-cloudstorage/source"
-	sourceConfig "github.com/conduitio/conduit-connector-google-cloudstorage/source/config"
+	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/config"
+	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source"
+	sourceConfig "github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/config"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 

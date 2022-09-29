@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"cloud.google.com/go/storage"
-	"github.com/conduitio/conduit-connector-google-cloudstorage/config"
-	sourceConfig "github.com/conduitio/conduit-connector-google-cloudstorage/source/config"
+	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/config"
+	sourceConfig "github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/config"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )

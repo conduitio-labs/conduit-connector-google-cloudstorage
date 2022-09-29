@@ -22,7 +22,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/goleak"
 
-	"github.com/conduitio/conduit-connector-google-cloudstorage/config"
+	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/config"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
