@@ -39,7 +39,7 @@ func specification() sdk.Specification {
 		Summary:     "An Google Cloud Storage Source and Destination Connector for Conduit, Written in Go.",
 		Description: "Real time data transmission with google cloud storage",
 		Version:     version,
-		Author:      "Santosh Kumar Gajawada",
+		Author:      "InfraCloud Technologies & Meroxa, Inc.",
 		SourceParams: map[string]sdk.Parameter{
 			config.ConfigKeyGCPServiceAccountKey: {
 				Default:     "",
