@@ -120,7 +120,7 @@ func (w *CDCIterator) startCDC() error {
 			if err != nil {
 				return fmt.Errorf("startCDC:Error while query SetAttrSelection Bucket(%q).Objects: %w", w.bucket, err)
 			}
-			it := w.client.Bucket(w.bucket).Objects(w.tomb.Context(nil), query) // nolint:staticcheck // SA1012 tomb expects nil
+			it := w.client.Bucket(w.bucket).Objects(w.tomb.Context(nil), query) //nolint:staticcheck // SA1012 tomb expects nil
 
 			cache, err := w.fetchCacheEntries(it)
 			if err != nil {
@@ -165,7 +165,7 @@ func (w *CDCIterator) flush() error {
 						return err
 					}
 				} else {
-					reader, err := w.client.Bucket(w.bucket).Object(entry.key).NewReader(w.tomb.Context(nil)) // nolint:staticcheck // SA1012 tomb expects nil
+					reader, err := w.client.Bucket(w.bucket).Object(entry.key).NewReader(w.tomb.Context(nil)) //nolint:staticcheck // SA1012 tomb expects nil
 					if err != nil {
 						return err
 					}
