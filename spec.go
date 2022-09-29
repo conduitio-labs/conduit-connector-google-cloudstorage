@@ -15,9 +15,7 @@
 package connector
 
 import (
-	"github.com/conduitio/conduit-connector-google-cloudstorage/config"
 	"github.com/conduitio/conduit-connector-google-cloudstorage/source"
-	sourceConfig "github.com/conduitio/conduit-connector-google-cloudstorage/source/config"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
@@ -34,24 +32,6 @@ func specification() sdk.Specification {
 		Summary:     "An Google Cloud Storage Source and Destination Connector for Conduit, Written in Go.",
 		Description: "Real time data transmission with google cloud storage",
 		Version:     "v0.1.0",
-		Author:      "Santosh Kumar Gajawada",
-		SourceParams: map[string]sdk.Parameter{
-			config.ConfigKeyGCPServiceAccountKey: {
-				Default:     "",
-				Required:    true,
-				Description: "Google Cloud Storage ServiceAccountKey",
-			},
-			config.ConfigKeyGCSBucket: {
-				Default:     "",
-				Required:    true,
-				Description: "Google Cloud Storage Bucket",
-			},
-			sourceConfig.ConfigKeyPollingPeriod: {
-				Default:     sourceConfig.DefaultPollingPeriod,
-				Required:    false,
-				Description: "polling period for the CDC mode, formatted as a time.Duration string.",
-			},
-		},
-		DestinationParams: map[string]sdk.Parameter{},
+		Author:      "InfraCloud, Meroxa, Inc.",
 	}
 }

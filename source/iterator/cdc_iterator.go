@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"sort"
 	"strings"
 	"time"
@@ -29,6 +29,10 @@ import (
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"google.golang.org/api/iterator"
 	"gopkg.in/tomb.v2"
+)
+
+const (
+	MetadataContentType = "gcs.contentType"
 )
 
 // CDCIterator scans the bucket periodically and detects changes made to it.
@@ -219,7 +223,7 @@ func (w *CDCIterator) fetchCacheEntries(it *storage.ObjectIterator) ([]CacheEntr
 func (w *CDCIterator) createRecord(entry CacheEntry, reader *storage.Reader) (sdk.Record, error) {
 	// build record
 	defer reader.Close()
-	rawBody, err := ioutil.ReadAll(reader)
+	rawBody, err := io.ReadAll(reader)
 	if err != nil {
 		return sdk.Record{}, err
 	}
@@ -232,15 +236,14 @@ func (w *CDCIterator) createRecord(entry CacheEntry, reader *storage.Reader) (sd
 		return sdk.Record{}, err
 	}
 
-	return sdk.Record{
-		Metadata: map[string]string{
-			"content-type": reader.Attrs.ContentType,
+	return sdk.Util.Source.NewRecordCreate(
+		p,
+		map[string]string{
+			MetadataContentType: reader.Attrs.ContentType,
 		},
-		Position:  p,
-		Payload:   sdk.RawData(rawBody),
-		Key:       sdk.RawData(entry.key),
-		CreatedAt: reader.Attrs.LastModified,
-	}, nil
+		sdk.RawData(entry.key),
+		sdk.RawData(rawBody),
+	), nil
 }
 
 // createDeletedRecord creates the record for the object fetched from GoogleCloudStorage bucket (for deletes)
@@ -254,14 +257,11 @@ func (w *CDCIterator) createDeletedRecord(entry CacheEntry) (sdk.Record, error) 
 		return sdk.Record{}, err
 	}
 
-	return sdk.Record{
-		Metadata: map[string]string{
-			"action": "delete",
-		},
-		Position:  p,
-		Key:       sdk.RawData(entry.key),
-		CreatedAt: entry.lastModified,
-	}, nil
+	return sdk.Util.Source.NewRecordDelete(
+		p,
+		map[string]string{},
+		sdk.RawData(entry.key),
+	), nil
 }
 
 func (w *CDCIterator) checkLastModified(objectAttrs *storage.ObjectAttrs) bool {

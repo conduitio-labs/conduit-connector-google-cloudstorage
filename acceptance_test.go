@@ -41,7 +41,7 @@ func (d GCSAcceptanceTestDriver) WriteToSource(t *testing.T, records []sdk.Recor
 				t.Fatal(err)
 			}
 		}()
-		if _, err := wc.Write(record.Payload.Bytes()); err != nil {
+		if _, err := wc.Write(record.Payload.After.Bytes()); err != nil {
 			t.Fatal(err)
 		}
 	}

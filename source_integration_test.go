@@ -137,7 +137,7 @@ func TestSource_SnapshotRestart(t *testing.T) {
 		}
 	}
 
-	// As the last item reached now the poistion will be cdc
+	// As the last item reached now the position will be cdc
 	if p, err := position.ParseRecordPosition(record.Position); err != nil {
 		t.Fatal(err)
 	} else if p.Type != position.TypeCDC {
@@ -216,8 +216,8 @@ func TestSource_SnapshotRestartAfterLastRecord(t *testing.T) {
 	if strings.Compare(string(obj.Key.Bytes()), testFileName) != 0 {
 		t.Fatalf("expected key: %s, got: %s", testFileName, string(obj.Key.Bytes()))
 	}
-	if strings.Compare(string(obj.Payload.Bytes()), content) != 0 {
-		t.Fatalf("expected payload: %s, got: %s", content, string(obj.Payload.Bytes()))
+	if strings.Compare(string(obj.Payload.After.Bytes()), content) != 0 {
+		t.Fatalf("expected payload: %s, got: %s", content, string(obj.Payload.After.Bytes()))
 	}
 
 	// As there is nothing left in the bucket ErrBackoffRetry will be returned
@@ -405,8 +405,8 @@ func TestSource_CDC_ReadRecordsUpdate(t *testing.T) {
 		t.Fatalf("expected key: %s, got: %s", testFileName, string(obj.Key.Bytes()))
 	}
 
-	if strings.Compare(string(obj.Payload.Bytes()), content) != 0 {
-		t.Fatalf("expected Payload: %s, got: %s", content, string(obj.Payload.Bytes()))
+	if strings.Compare(string(obj.Payload.After.Bytes()), content) != 0 {
+		t.Fatalf("expected Payload: %s, got: %s", content, string(obj.Payload.After.Bytes()))
 	}
 }
 
@@ -459,8 +459,8 @@ func TestSource_CDC_ReadRecordsInsert(t *testing.T) {
 		t.Fatalf("expected key: %s, got: %s", testFileName, string(obj.Key.Bytes()))
 	}
 
-	if strings.Compare(string(obj.Payload.Bytes()), content) != 0 {
-		t.Fatalf("expected Payload: %s, got: %s", content, string(obj.Payload.Bytes()))
+	if strings.Compare(string(obj.Payload.After.Bytes()), content) != 0 {
+		t.Fatalf("expected Payload: %s, got: %s", content, string(obj.Payload.After.Bytes()))
 	}
 }
 
@@ -935,7 +935,7 @@ func readAndAssert(ctx context.Context, t *testing.T, source *sourceConnector.So
 	}
 
 	gotKey := string(got.Key.Bytes())
-	gotPayload := string(got.Payload.Bytes())
+	gotPayload := string(got.Payload.After.Bytes())
 	if gotKey != want.key {
 		t.Fatalf("expected key: %s\n got: %s", want.key, gotKey)
 	}
