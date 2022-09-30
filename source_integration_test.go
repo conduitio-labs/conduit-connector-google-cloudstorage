@@ -667,8 +667,8 @@ func TestSource_CDCPositionToCaptureInsertandDeleteActions(t *testing.T) {
 	if strings.Compare(string(obj2.Key.Bytes()), testFileName) != 0 {
 		t.Fatalf("expected key: %s, got: %s", testFileName, string(obj2.Key.Bytes()))
 	}
-	if strings.Compare(obj2.Metadata["action"], expectedAction) != 0 {
-		t.Fatalf("expected action: %s, got: %s", expectedAction, obj2.Metadata["action"])
+	if obj2.Operation != sdk.OperationDelete {
+		t.Fatalf("expected action: %s, got: %s", expectedAction, obj2.Operation.String())
 	}
 }
 
@@ -721,8 +721,8 @@ func TestSource_CDC_DeleteWithVersioning(t *testing.T) {
 	if strings.Compare(string(obj.Key.Bytes()), testFileName) != 0 {
 		t.Fatalf("expected key: %s, got: %s", testFileName, string(obj.Key.Bytes()))
 	}
-	if strings.Compare(obj.Metadata["action"], expectedAction) != 0 {
-		t.Fatalf("expected action: %s, got: %s", expectedAction, obj.Metadata["action"])
+	if obj.Operation != sdk.OperationDelete {
+		t.Fatalf("expected action: %s, got: %s", expectedAction, obj.Operation.String())
 	}
 }
 
