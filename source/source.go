@@ -20,7 +20,8 @@ import (
 	"fmt"
 
 	"cloud.google.com/go/storage"
-	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/config"
+	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/config"
+	srcConfig "github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/config"
 	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/iterator"
 	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/position"
 	sdk "github.com/conduitio/conduit-connector-sdk"
@@ -30,7 +31,7 @@ import (
 // Source connector
 type Source struct {
 	sdk.UnimplementedSource
-	config   config.SourceConfig
+	config   srcConfig.SourceConfig
 	client   *storage.Client
 	iterator Iterator
 }
@@ -41,7 +42,27 @@ type Iterator interface {
 }
 
 func NewSource() sdk.Source {
-	return &Source{}
+	return sdk.SourceWithMiddleware(&Source{}, sdk.DefaultSourceMiddleware()...)
+}
+
+func (s *Source) Parameters() map[string]sdk.Parameter {
+	return map[string]sdk.Parameter{
+		config.ConfigKeyGCPServiceAccountKey: {
+			Default:     "",
+			Required:    true,
+			Description: "Google Cloud Storage ServiceAccountKey",
+		},
+		config.ConfigKeyGCSBucket: {
+			Default:     "",
+			Required:    true,
+			Description: "Google Cloud Storage Bucket",
+		},
+		srcConfig.ConfigKeyPollingPeriod: {
+			Default:     srcConfig.DefaultPollingPeriod,
+			Required:    false,
+			Description: "polling period for the CDC mode, formatted as a time.Duration string.",
+		},
+	}
 }
 
 // Configure parses and stores the configurations
@@ -50,7 +71,7 @@ func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
 	logger := sdk.Logger(ctx).With().Str("Class", "Source").Str("Method", "Configure").Logger()
 	logger.Trace().Msg("Starting Configuring the Source Connector...")
 
-	sourceConfig, err := config.ParseSourceConfig(ctx, cfg)
+	sourceConfig, err := srcConfig.ParseSourceConfig(ctx, cfg)
 	if err != nil {
 		logger.Error().Stack().Err(err).Msg("Error While parsing the Source Config")
 		return err

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package connector
+package utils
 
 import (
 	"context"
@@ -28,15 +28,15 @@ import (
 )
 
 const (
-	projectID = "projectID"
+	ProjectID = "projectID"
 )
 
-func newGCSClient(cfg map[string]string) (*storage.Client, error) {
+func NewGCSClient(cfg map[string]string) (*storage.Client, error) {
 	ctx := context.Background()
 	return storage.NewClient(ctx, option.WithCredentialsJSON([]byte(cfg[config.ConfigKeyGCPServiceAccountKey])))
 }
 
-func createTestGCSBucket(client *storage.Client, projectID, bucketName string) error {
+func CreateTestGCSBucket(client *storage.Client, projectID, bucketName string) error {
 	bucket := client.Bucket(bucketName)
 	ctx := context.Background()
 	return bucket.Create(ctx, projectID, &storage.BucketAttrs{
@@ -44,7 +44,7 @@ func createTestGCSBucket(client *storage.Client, projectID, bucketName string) e
 	})
 }
 
-func clearAndDeleteTestGCSBucket(t *testing.T, client *storage.Client, bucket string) {
+func ClearAndDeleteTestGCSBucket(t *testing.T, client *storage.Client, bucket string) {
 	ctx := context.Background()
 	it := client.Bucket(bucket).Objects(ctx, &storage.Query{
 		Versions: true,
@@ -70,7 +70,7 @@ func clearAndDeleteTestGCSBucket(t *testing.T, client *storage.Client, bucket st
 	}
 }
 
-func parseIntegrationConfig() (map[string]string, error) {
+func ParseIntegrationConfig() (map[string]string, error) {
 	serviceAccountKey := os.Getenv("GCP_ServiceAccount_Key")
 	if serviceAccountKey == "" {
 		return map[string]string{}, errors.New("GCP_ServiceAccount_Key env var must be set")
@@ -89,7 +89,7 @@ func parseIntegrationConfig() (map[string]string, error) {
 	return map[string]string{
 		config.ConfigKeyGCPServiceAccountKey: serviceAccountKey,
 		config.ConfigKeyGCSBucket:            bucket,
-		projectID:                            projectid,
+		ProjectID:                            projectid,
 		sourceConfig.ConfigKeyPollingPeriod:  "100ms",
 	}, nil
 }

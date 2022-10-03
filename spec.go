@@ -15,9 +15,7 @@
 package connector
 
 import (
-	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/config"
 	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source"
-	sourceConfig "github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/config"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
@@ -40,23 +38,5 @@ func specification() sdk.Specification {
 		Description: "Real time data transmission with google cloud storage",
 		Version:     version,
 		Author:      "InfraCloud Technologies & Meroxa, Inc.",
-		SourceParams: map[string]sdk.Parameter{
-			config.ConfigKeyGCPServiceAccountKey: {
-				Default:     "",
-				Required:    true,
-				Description: "Google Cloud Storage ServiceAccountKey",
-			},
-			config.ConfigKeyGCSBucket: {
-				Default:     "",
-				Required:    true,
-				Description: "Google Cloud Storage Bucket",
-			},
-			sourceConfig.ConfigKeyPollingPeriod: {
-				Default:     sourceConfig.DefaultPollingPeriod,
-				Required:    false,
-				Description: "polling period for the CDC mode, formatted as a time.Duration string.",
-			},
-		},
-		DestinationParams: map[string]sdk.Parameter{},
 	}
 }

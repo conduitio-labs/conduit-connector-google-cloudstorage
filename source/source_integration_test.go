@@ -11,7 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package connector
+
+package source
 
 import (
 	"context"
@@ -25,8 +26,8 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/config"
-	sourceConnector "github.com/conduitio-labs/conduit-connector-google-cloudstorage/source"
 	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/position"
+	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/utils"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/google/uuid"
 )
@@ -41,7 +42,7 @@ func TestSource_SuccessfulSnapshot(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &sourceConnector.Source{}
+	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -83,7 +84,7 @@ func TestSource_SnapshotRestart(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &sourceConnector.Source{}
+	source := &Source{}
 
 	err := source.Configure(ctx, cfg)
 	if err != nil {
@@ -118,7 +119,7 @@ func TestSource_SnapshotRestart(t *testing.T) {
 
 	// Snapshot Restart will read all the files again
 
-	source = &sourceConnector.Source{}
+	source = &Source{}
 	err = source.Configure(ctx, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -137,7 +138,7 @@ func TestSource_SnapshotRestart(t *testing.T) {
 		}
 	}
 
-	// As the last item reached now the poistion will be cdc
+	// As the last item reached now the position will be cdc
 	if p, err := position.ParseRecordPosition(record.Position); err != nil {
 		t.Fatal(err)
 	} else if p.Type != position.TypeCDC {
@@ -155,7 +156,7 @@ func TestSource_SnapshotRestartAfterLastRecord(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &sourceConnector.Source{}
+	source := &Source{}
 
 	err := source.Configure(ctx, cfg)
 	if err != nil {
@@ -196,7 +197,7 @@ func TestSource_SnapshotRestartAfterLastRecord(t *testing.T) {
 
 	// Snapshot Restart will not read all the files again instead reads only the newly added testfile
 
-	source = &sourceConnector.Source{}
+	source = &Source{}
 	err = source.Configure(ctx, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -216,8 +217,8 @@ func TestSource_SnapshotRestartAfterLastRecord(t *testing.T) {
 	if strings.Compare(string(obj.Key.Bytes()), testFileName) != 0 {
 		t.Fatalf("expected key: %s, got: %s", testFileName, string(obj.Key.Bytes()))
 	}
-	if strings.Compare(string(obj.Payload.Bytes()), content) != 0 {
-		t.Fatalf("expected payload: %s, got: %s", content, string(obj.Payload.Bytes()))
+	if strings.Compare(string(obj.Payload.After.Bytes()), content) != 0 {
+		t.Fatalf("expected payload: %s, got: %s", content, string(obj.Payload.After.Bytes()))
 	}
 
 	// As there is nothing left in the bucket ErrBackoffRetry will be returned
@@ -232,7 +233,7 @@ func TestSource_SnapshotStartFromNonNilPosition(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &sourceConnector.Source{}
+	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -271,7 +272,7 @@ func TestSource_EmptyBucket(t *testing.T) {
 	_, cfg := prepareIntegrationTest(t)
 
 	ctx := context.Background()
-	source := &sourceConnector.Source{}
+	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -296,7 +297,7 @@ func TestSource_NonExistentBucket(t *testing.T) {
 	_, cfg := prepareIntegrationTest(t)
 	ctx := context.Background()
 
-	source := &sourceConnector.Source{}
+	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -321,7 +322,7 @@ func TestSource_StartCDCAfterEmptyBucket(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &sourceConnector.Source{}
+	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -361,7 +362,7 @@ func TestSource_CDC_ReadRecordsUpdate(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &sourceConnector.Source{}
+	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -405,8 +406,8 @@ func TestSource_CDC_ReadRecordsUpdate(t *testing.T) {
 		t.Fatalf("expected key: %s, got: %s", testFileName, string(obj.Key.Bytes()))
 	}
 
-	if strings.Compare(string(obj.Payload.Bytes()), content) != 0 {
-		t.Fatalf("expected Payload: %s, got: %s", content, string(obj.Payload.Bytes()))
+	if strings.Compare(string(obj.Payload.After.Bytes()), content) != 0 {
+		t.Fatalf("expected Payload: %s, got: %s", content, string(obj.Payload.After.Bytes()))
 	}
 }
 
@@ -415,7 +416,7 @@ func TestSource_CDC_ReadRecordsInsert(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &sourceConnector.Source{}
+	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -459,8 +460,8 @@ func TestSource_CDC_ReadRecordsInsert(t *testing.T) {
 		t.Fatalf("expected key: %s, got: %s", testFileName, string(obj.Key.Bytes()))
 	}
 
-	if strings.Compare(string(obj.Payload.Bytes()), content) != 0 {
-		t.Fatalf("expected Payload: %s, got: %s", content, string(obj.Payload.Bytes()))
+	if strings.Compare(string(obj.Payload.After.Bytes()), content) != 0 {
+		t.Fatalf("expected Payload: %s, got: %s", content, string(obj.Payload.After.Bytes()))
 	}
 }
 
@@ -469,7 +470,7 @@ func TestSource_CDC_ReadRecordsInsertContextCancellation(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &sourceConnector.Source{}
+	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -524,7 +525,7 @@ func TestSource_CDCRestart(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &sourceConnector.Source{}
+	source := &Source{}
 	err := source.Configure(ctx, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -569,7 +570,7 @@ func TestSource_CDCRestart(t *testing.T) {
 	_ = source.Teardown(ctx)
 
 	// start the source process again
-	source1 := &sourceConnector.Source{}
+	source1 := &Source{}
 	defer func() {
 		_ = source1.Teardown(ctx)
 	}()
@@ -610,7 +611,7 @@ func TestSource_CDCPositionToCaptureInsertandDeleteActions(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &sourceConnector.Source{}
+	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -667,8 +668,8 @@ func TestSource_CDCPositionToCaptureInsertandDeleteActions(t *testing.T) {
 	if strings.Compare(string(obj2.Key.Bytes()), testFileName) != 0 {
 		t.Fatalf("expected key: %s, got: %s", testFileName, string(obj2.Key.Bytes()))
 	}
-	if strings.Compare(obj2.Metadata["action"], expectedAction) != 0 {
-		t.Fatalf("expected action: %s, got: %s", expectedAction, obj2.Metadata["action"])
+	if obj2.Operation != sdk.OperationDelete {
+		t.Fatalf("expected action: %s, got: %s", expectedAction, obj2.Operation.String())
 	}
 }
 
@@ -677,7 +678,7 @@ func TestSource_CDC_DeleteWithVersioning(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &sourceConnector.Source{}
+	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -721,8 +722,8 @@ func TestSource_CDC_DeleteWithVersioning(t *testing.T) {
 	if strings.Compare(string(obj.Key.Bytes()), testFileName) != 0 {
 		t.Fatalf("expected key: %s, got: %s", testFileName, string(obj.Key.Bytes()))
 	}
-	if strings.Compare(obj.Metadata["action"], expectedAction) != 0 {
-		t.Fatalf("expected action: %s, got: %s", expectedAction, obj.Metadata["action"])
+	if obj.Operation != sdk.OperationDelete {
+		t.Fatalf("expected action: %s, got: %s", expectedAction, obj.Operation.String())
 	}
 }
 
@@ -731,7 +732,7 @@ func TestSource_CDC_EmptyBucketWithDeletedObjects(t *testing.T) {
 
 	ctx := context.Background()
 	testBucket := cfg[config.ConfigKeyGCSBucket]
-	source := &sourceConnector.Source{}
+	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -784,12 +785,12 @@ func TestOpenSource_FailsWhenClientCreation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg, err := parseIntegrationConfig()
+	cfg, err := utils.ParseIntegrationConfig()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	source := &sourceConnector.Source{}
+	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -807,13 +808,13 @@ func TestOpenSource_FailsWhenClientCreation(t *testing.T) {
 }
 
 func TestOpenSource_FailsParsePosition(t *testing.T) {
-	cfg, err := parseIntegrationConfig()
+	cfg, err := utils.ParseIntegrationConfig()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	ctx := context.Background()
-	source := &sourceConnector.Source{}
+	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -831,14 +832,14 @@ func TestOpenSource_FailsParsePosition(t *testing.T) {
 }
 
 func TestOpenSource_InvalidPositionType(t *testing.T) {
-	cfg, err := parseIntegrationConfig()
+	cfg, err := utils.ParseIntegrationConfig()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	ctx := context.Background()
 
-	source := &sourceConnector.Source{}
+	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
 	}()
@@ -865,22 +866,22 @@ func TestOpenSource_InvalidPositionType(t *testing.T) {
 }
 
 func prepareIntegrationTest(t *testing.T) (*storage.Client, map[string]string) {
-	cfg, err := parseIntegrationConfig()
+	cfg, err := utils.ParseIntegrationConfig()
 	if err != nil {
 		t.Skip(err)
 	}
 
-	client, err := newGCSClient(cfg)
+	client, err := utils.NewGCSClient(cfg)
 	if err != nil {
 		t.Fatalf("could not create GCS client: %v", err)
 	}
 
 	bucket := "conduit-gcs-source-test-" + uuid.NewString()
-	if err := createTestGCSBucket(client, cfg[projectID], bucket); err != nil {
+	if err := utils.CreateTestGCSBucket(client, cfg[utils.ProjectID], bucket); err != nil {
 		t.Fatalf("could not create test gcs client: %v", err)
 	}
 	t.Cleanup(func() {
-		clearAndDeleteTestGCSBucket(t, client, bucket)
+		utils.ClearAndDeleteTestGCSBucket(t, client, bucket)
 		if err := client.Close(); err != nil {
 			t.Fatal(err)
 		}
@@ -908,7 +909,7 @@ func addObjectsToTheBucket(ctx context.Context, t *testing.T, testBucket string,
 }
 
 // readWithTimeout will try to read the next record until the timeout is reached.
-func readWithTimeout(ctx context.Context, source *sourceConnector.Source, timeout time.Duration) (sdk.Record, error) {
+func readWithTimeout(ctx context.Context, source *Source, timeout time.Duration) (sdk.Record, error) {
 	timeoutTimer := time.After(timeout)
 
 	for {
@@ -928,14 +929,14 @@ func readWithTimeout(ctx context.Context, source *sourceConnector.Source, timeou
 
 // readAndAssert will read the next record and assert that the returned record is
 // the same as the wanted object.
-func readAndAssert(ctx context.Context, t *testing.T, source *sourceConnector.Source, want Object) (sdk.Record, error) {
+func readAndAssert(ctx context.Context, t *testing.T, source *Source, want Object) (sdk.Record, error) {
 	got, err := source.Read(ctx)
 	if err != nil {
 		return got, err
 	}
 
 	gotKey := string(got.Key.Bytes())
-	gotPayload := string(got.Payload.Bytes())
+	gotPayload := string(got.Payload.After.Bytes())
 	if gotKey != want.key {
 		t.Fatalf("expected key: %s\n got: %s", want.key, gotKey)
 	}
