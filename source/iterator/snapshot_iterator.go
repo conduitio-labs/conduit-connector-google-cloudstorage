@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -73,7 +73,7 @@ func (s *SnapshotIterator) Next(ctx context.Context) (sdk.Record, error) {
 		return sdk.Record{}, fmt.Errorf("could not fetch the next object: %w", err)
 	}
 
-	ObjectData, err := ioutil.ReadAll(objectReader)
+	ObjectData, err := io.ReadAll(objectReader)
 	if err != nil {
 		return sdk.Record{}, fmt.Errorf("could not read the object's body: %w", err)
 	}
@@ -96,15 +96,14 @@ func (s *SnapshotIterator) Next(ctx context.Context) (sdk.Record, error) {
 	}
 
 	// create the record
-	output := sdk.Record{
-		Metadata: map[string]string{
-			"content-type": objectAttrs.ContentType,
+	output := sdk.Util.Source.NewRecordSnapshot(
+		p,
+		map[string]string{
+			MetadataContentType: objectAttrs.ContentType,
 		},
-		Position:  p,
-		Payload:   sdk.RawData(ObjectData),
-		Key:       sdk.RawData(objectAttrs.Name),
-		CreatedAt: objectAttrs.Updated,
-	}
+		sdk.RawData(objectAttrs.Name),
+		sdk.RawData(ObjectData),
+	)
 
 	return output, nil
 }

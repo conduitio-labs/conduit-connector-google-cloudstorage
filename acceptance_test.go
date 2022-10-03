@@ -19,11 +19,11 @@ import (
 	"testing"
 
 	"cloud.google.com/go/storage"
+	"github.com/conduitio/conduit-connector-google-cloudstorage/config"
+	"github.com/conduitio/conduit-connector-google-cloudstorage/source/utils"
+	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/google/uuid"
 	"go.uber.org/goleak"
-
-	"github.com/conduitio/conduit-connector-google-cloudstorage/config"
-	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
 type GCSAcceptanceTestDriver struct {
@@ -33,7 +33,7 @@ type GCSAcceptanceTestDriver struct {
 
 func (d GCSAcceptanceTestDriver) WriteToSource(t *testing.T, records []sdk.Record) []sdk.Record {
 	ctx := context.Background()
-	testBucket := d.SourceConfig(t)[config.ConfigKeyGCSBucket]
+	testBucket := d.Config.SourceConfig[config.ConfigKeyGCSBucket]
 	for _, record := range records {
 		wc := d.GCSClient.Bucket(testBucket).Object(string(record.Key.Bytes())).NewWriter(ctx)
 		defer func() {
@@ -41,7 +41,7 @@ func (d GCSAcceptanceTestDriver) WriteToSource(t *testing.T, records []sdk.Recor
 				t.Fatal(err)
 			}
 		}()
-		if _, err := wc.Write(record.Payload.Bytes()); err != nil {
+		if _, err := wc.Write(record.Payload.After.Bytes()); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -49,12 +49,12 @@ func (d GCSAcceptanceTestDriver) WriteToSource(t *testing.T, records []sdk.Recor
 }
 
 func TestAcceptance(t *testing.T) {
-	sourceConfig, err := parseIntegrationConfig()
+	sourceConfig, err := utils.ParseIntegrationConfig()
 	if err != nil {
 		t.Skip(err)
 	}
 
-	gcsClient, err := newGCSClient(sourceConfig)
+	gcsClient, err := utils.NewGCSClient(sourceConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,12 +73,12 @@ func TestAcceptance(t *testing.T) {
 				DestinationConfig: nil,
 				BeforeTest: func(t *testing.T) {
 					sourceConfig[config.ConfigKeyGCSBucket] = "acceptance-test-bucket-" + uuid.NewString()
-					if err := createTestGCSBucket(gcsClient, sourceConfig["projectID"], sourceConfig[config.ConfigKeyGCSBucket]); err != nil {
+					if err := utils.CreateTestGCSBucket(gcsClient, sourceConfig["projectID"], sourceConfig[config.ConfigKeyGCSBucket]); err != nil {
 						t.Fatalf("could not create test gcs bucket: %v", err)
 					}
 				},
 				AfterTest: func(t *testing.T) {
-					clearAndDeleteTestGCSBucket(t, gcsClient, sourceConfig[config.ConfigKeyGCSBucket])
+					utils.ClearAndDeleteTestGCSBucket(t, gcsClient, sourceConfig[config.ConfigKeyGCSBucket])
 				},
 				// Apart from the IgnoreCurrent, runtime_pollWait is also ignorned because here the GCS/storage client(Created Above) make a gRPC connection which is consistent and opens until it is closed.
 				GoleakOptions: []goleak.Option{goleak.IgnoreCurrent(), goleak.IgnoreTopFunction("internal/poll.runtime_pollWait")},
@@ -88,4 +88,16 @@ func TestAcceptance(t *testing.T) {
 		},
 		gcsClient,
 	})
+}
+
+// GenerateRecord needed to override because maximum object length for GCS is 1024 characters
+func (d GCSAcceptanceTestDriver) GenerateRecord(t *testing.T, operation sdk.Operation) sdk.Record {
+	return sdk.Record{
+		Position:  sdk.Position(uuid.NewString()),
+		Operation: operation,
+		Key:       sdk.RawData(uuid.NewString()),
+		Payload: sdk.Change{
+			After: sdk.RawData(uuid.NewString()),
+		},
+	}
 }
