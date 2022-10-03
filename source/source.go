@@ -20,10 +20,10 @@ import (
 	"fmt"
 
 	"cloud.google.com/go/storage"
-	"github.com/conduitio/conduit-connector-google-cloudstorage/config"
-	srcConfig "github.com/conduitio/conduit-connector-google-cloudstorage/source/config"
-	"github.com/conduitio/conduit-connector-google-cloudstorage/source/iterator"
-	"github.com/conduitio/conduit-connector-google-cloudstorage/source/position"
+	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/config"
+	srcConfig "github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/config"
+	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/iterator"
+	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/position"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"google.golang.org/api/option"
 )

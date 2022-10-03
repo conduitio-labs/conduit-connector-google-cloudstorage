@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	"github.com/conduitio/conduit-connector-google-cloudstorage/source/position"
+	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/position"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 

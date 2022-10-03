@@ -17,7 +17,7 @@ package main
 import (
 	sdk "github.com/conduitio/conduit-connector-sdk"
 
-	connector "github.com/conduitio/conduit-connector-google-cloudstorage"
+	connector "github.com/conduitio-labs/conduit-connector-google-cloudstorage"
 )
 
 func main() {

@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	globalConfig "github.com/conduitio/conduit-connector-google-cloudstorage/config"
+	globalConfig "github.com/conduitio-labs/conduit-connector-google-cloudstorage/config"
 )
 
 func TestParseGlobalConfig(t *testing.T) {

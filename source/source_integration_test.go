@@ -25,9 +25,9 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	"github.com/conduitio/conduit-connector-google-cloudstorage/config"
-	"github.com/conduitio/conduit-connector-google-cloudstorage/source/position"
-	"github.com/conduitio/conduit-connector-google-cloudstorage/source/utils"
+	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/config"
+	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/position"
+	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/utils"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/google/uuid"
 )

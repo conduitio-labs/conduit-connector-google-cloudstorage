@@ -20,7 +20,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/conduitio/conduit-connector-google-cloudstorage/config"
+	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/config"
 )
 
 func TestConfigureSource_FailsWhenConfigEmpty(t *testing.T) {
