@@ -20,5 +20,5 @@ jobs:
         env:
             GCP_ServiceAccount_Key: ${{ secrets.GCP_ServiceAccount_Key }}
             GCP_ProjectID: ${{ secrets.GCP_ProjectID }}
-            GCP_Bucket: conduit-gcs-testing
+            GCP_Bucket: github-conduit-testing-bucket
         run: make test GOTEST_FLAGS="-v -count=1"
