@@ -91,7 +91,7 @@ func TestAcceptance(t *testing.T) {
 }
 
 // GenerateRecord needed to override because maximum object length for GCS is 1024 characters
-func (d GCSAcceptanceTestDriver) GenerateRecord(t *testing.T, operation sdk.Operation) sdk.Record {
+func (d GCSAcceptanceTestDriver) GenerateRecord(_ *testing.T, operation sdk.Operation) sdk.Record {
 	return sdk.Record{
 		Position:  sdk.Position(uuid.NewString()),
 		Operation: operation,
