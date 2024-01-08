@@ -14,3 +14,12 @@ test-integration:
 	go test $(GOTEST_FLAGS) -v -race ./...; ret=$$?; \
 		docker compose -f test/docker-compose-template.yml down; \
 		exit $$ret
+
+lint:
+	golangci-lint run -v
+
+.PHONY: install-tools
+install-tools:
+	@echo Installing tools from tools.go
+	@go list -e -f '{{ join .Imports "\n" }}' tools.go | xargs -tI % go install %
+	@go mod tidy
