@@ -15,11 +15,10 @@
 package main
 
 import (
+	cloudstorage "github.com/conduitio-labs/conduit-connector-google-cloudstorage"
 	sdk "github.com/conduitio/conduit-connector-sdk"
-
-	connector "github.com/conduitio-labs/conduit-connector-google-cloudstorage"
 )
 
 func main() {
-	sdk.Serve(connector.Connector)
+	sdk.Serve(cloudstorage.Connector)
 }

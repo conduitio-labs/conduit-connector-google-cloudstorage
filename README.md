@@ -1,16 +1,17 @@
 # Conduit Connector Google Cloud Storage
 
 ### General
+
 The Google Cloud Storage connector is one of [Conduit](https://github.com/ConduitIO/conduit) plugins. It provides source GCS connectors.
 
 ### How to build it
+
 Run `make`.
 
 ### Testing
 
-Run `make test` with optional `GOTEST_FLAGS` set to run all the tests. You must set the environment variables (`GCP_ServiceAccount_Key`
-, `GCP_ProjectID`, `GCP_Bucket`)
-before you run all the tests. If not set, the tests that use these variables will be ignored.
+Run `make test` with optional `GOTEST_FLAGS` set to run all the tests. You must set the environment variables `GCP_ServiceAccount_Key`,
+`GCP_ProjectID` and `GCP_Bucket` before you run all the tests. If not set, the tests that use these variables will be ignored.
 
 Cases/Scenarios which are dependent on GCS Error response and where these can't be reproducible are ignored in the test cases.
  
@@ -46,17 +47,17 @@ type Position struct {
 The connector goes through two reading modes.
 
 * Snapshot mode (Value 0): which loops through the GCS bucket and returns the objects that are already in there. The _position type_ during this mode is 0. which makes the connector know at what mode it is and what object it last
- read. The _position Timestamp_ will be used when changing to CDC mode, the iterator will capture changes that
- happened after that.
+  read. The _position Timestamp_ will be used when changing to CDC mode, the iterator will capture changes that
+  happened after that.
 
 * CDC mode: (Value 1) this mode iterates through the GCS bucket every `pollingPeriod` and captures new actions made on the bucket.
- the _Position Type_ during this mode is 1. This position is used to return only the
- actions with a _Position Timestamp_ higher than the last record returned even if the timestamp got matched then the decision would be based on lexicographical comparison, which will ensure that no duplications are in
- place.
+  the _Position Type_ during this mode is 1. This position is used to return only the
+  actions with a _Position Timestamp_ higher than the last record returned even if the timestamp got matched then the decision would be based on lexicographical comparison, which will ensure that no duplications are in
+  place.
 
- The CDC mode will start after end of the snapshot item.
+  The CDC mode will start after end of the snapshot item.
  
- Here the CDC mode works on the default google iterator provided by the GO SDK with a configurable pollingPeriod and it doesn't support the notifications through pub/sub because making it seperate service would be more flexible.
+  Here the CDC mode works on the default google iterator provided by the GO SDK with a configurable `pollingPeriod` and it doesn't support the notifications through pub/sub because making it seperate service would be more flexible.
 
 ### Record Keys
 
@@ -68,11 +69,11 @@ the GCS bucket.
 
 The config passed to `Configure` can contain the following fields.
 
-| name                  | description                                                                            | required  | example             |
-|-----------------------|----------------------------------------------------------------------------------------|-----------|---------------------|
-| `serviceAccountKey` | GCP service account key in JSON                                              | yes       | "{\\"key\\":\\"value\\",....}" |
-| `bucket`          | the GCS bucket name                                                                 | yes       | "bucket_name"       |
-| `pollingPeriod`       | polling period for the CDC mode, formatted as a time.Duration string. default is "1s"  | no        | "2s", "500ms"       |
+| name                  | description                                                                            | required  | example                |
+|-----------------------|----------------------------------------------------------------------------------------|-----------|------------------------|
+| `serviceAccountKey`   | GCP service account key in JSON                                                        | yes       | `{"key":"value",....}` |
+| `bucket`              | the GCS bucket name                                                                    | yes       | `bucket_name`          |
+| `pollingPeriod`       | polling period for the CDC mode, formatted as a time.Duration string. default is "1s"  | no        | `2s`, `500ms`          |
 
 When testing using swagger or any rest client, provide the JSON stringified value in `serviceAccountKey`
 Example: `console.log(JSON.stringify(JSON.stringify(key file content)))` run this JavaScript command to get the preferred stringified value. because wrapping JSON with single quotes is not accepted in swagger OR
@@ -80,9 +81,11 @@ Refer to the above example provided in the table.
 
 ### Observations
 
-* Everything in the bucket is an object, But there is a differentiation like folders(object name ending with a slash) or files only for the visual representation in the GCS console. But in the back-end, there is no metadata to identify the differentiation. So we consider all the objects in the bucket irrespective of object name and size.
+Everything in the bucket is an object, But there is a differentiation like folders (object name ending with a slash)
+or files only for the visual representation in the GCS console. But in the back-end, there is no metadata to identify
+the differentiation. So we consider all the objects in the bucket irrespective of object name and size.
 
 ### Known Limitations
 
-* If a pipeline restarts during the snapshot, then the connector will start scanning the objects from the beginning of
+If a pipeline restarts during the snapshot, then the connector will start scanning the objects from the beginning of
 the bucket, which could result in duplications.

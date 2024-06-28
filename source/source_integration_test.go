@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -768,8 +767,7 @@ func TestSource_CDC_EmptyBucketWithDeletedObjects(t *testing.T) {
 		}
 	}
 
-	// should have changed to CDC
-	// CDC should NOT read the deleted object
+	// should have changed to CDC and should NOT read the deleted object
 	_, err = readWithTimeout(ctx, source, time.Second)
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("error should be DeadlineExceeded but got %v", err)
@@ -777,14 +775,11 @@ func TestSource_CDC_EmptyBucketWithDeletedObjects(t *testing.T) {
 }
 
 func TestOpenSource_FailsWhenClientCreation(t *testing.T) {
-	err := os.Setenv("GCP_ServiceAccount_Key", "Incorrect service account key")
-	os.Setenv("GCP_Bucket", "bucket")
-	os.Setenv("GCP_ProjectID", "projectid")
+	t.Setenv("GCP_ServiceAccount_Key", "Incorrect service account key")
+	t.Setenv("GCP_Bucket", "bucket")
+	t.Setenv("GCP_ProjectID", "projectid")
 	ctx := context.Background()
 
-	if err != nil {
-		t.Fatal(err)
-	}
 	cfg, err := utils.ParseIntegrationConfig()
 	if err != nil {
 		t.Fatal(err)

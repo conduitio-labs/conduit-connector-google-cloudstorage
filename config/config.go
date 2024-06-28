@@ -23,24 +23,22 @@ import (
 )
 
 const (
-	// ConfigKeyGCPServiceAccountKey is the config name for Google cloud platform service account key
+	// ConfigKeyGCPServiceAccountKey is the config name for Google cloud platform service account key.
 	ConfigKeyGCPServiceAccountKey = "serviceAccountKey"
 
-	// ConfigKeyGCSBucket is the config name for Google cloud storage bucket
+	// ConfigKeyGCSBucket is the config name for Google cloud storage bucket.
 	ConfigKeyGCSBucket = "bucket"
 )
 
-var (
-	ErrEmptyConfig = errors.New("missing or empty config")
-)
+var ErrEmptyConfig = errors.New("missing or empty config")
 
-// Config represents configuration needed for Google cloud storage
+// Config represents configuration needed for Google cloud storage.
 type Config struct {
 	GoogleCloudStorageBucket     string
 	GoogleCloudServiceAccountKey string
 }
 
-// ParseGlobalConfig attempts to parse plugins.Config into a Config struct
+// ParseGlobalConfig attempts to parse plugins.Config into a Config struct.
 func ParseGlobalConfig(ctx context.Context, cfg map[string]string) (Config, error) {
 	logger := sdk.Logger(ctx).With().Str("Method", "ParseGlobalConfig").Logger()
 	logger.Trace().Msg("Started Parsing the config")

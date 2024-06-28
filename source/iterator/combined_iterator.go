@@ -61,7 +61,7 @@ func NewCombinedIterator(ctx context.Context, bucket string, pollingPeriod time.
 			return nil, fmt.Errorf("could not create the snapshot iterator: %w", err)
 		}
 
-		logger.Trace().Msg("Sucessfully created the New Snaphot iterator")
+		logger.Trace().Msg("Successfully created the New Snaphot iterator")
 
 	case position.TypeCDC:
 		logger.Trace().Msg("Starting creating a CDC iterator")
@@ -73,7 +73,7 @@ func NewCombinedIterator(ctx context.Context, bucket string, pollingPeriod time.
 			return nil, fmt.Errorf("could not create the CDC iterator: %w", err)
 		}
 
-		logger.Trace().Msg("Sucessfully created the CDC iterator")
+		logger.Trace().Msg("Successfully created the CDC iterator")
 
 	default:
 		return nil, fmt.Errorf("invalid position type (%d)", p.Type)
@@ -92,7 +92,7 @@ func (c *CombinedIterator) Next(ctx context.Context) (sdk.Record, error) {
 		record, err := c.snapshotIterator.Next(ctx)
 
 		// Empty Bucket
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			// switch to cdc iterator
 			e := c.switchToCDCIterator(ctx)
 			if e != nil {

@@ -28,7 +28,7 @@ import (
 	"google.golang.org/api/option"
 )
 
-// Source connector
+// Source connector.
 type Source struct {
 	sdk.UnimplementedSource
 	config   srcConfig.SourceConfig
@@ -66,7 +66,7 @@ func (s *Source) Parameters() map[string]sdk.Parameter {
 }
 
 // Configure parses and stores the configurations
-// returns an error in case of invalid config
+// returns an error in case of invalid config.
 func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
 	logger := sdk.Logger(ctx).With().Str("Class", "Source").Str("Method", "Configure").Logger()
 	logger.Trace().Msg("Starting Configuring the Source Connector...")
@@ -83,7 +83,7 @@ func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
 	return nil
 }
 
-// Open prepare the plugin to start sending records from the given position
+// Open prepare the plugin to start sending records from the given position.
 func (s *Source) Open(ctx context.Context, pos sdk.Position) error {
 	logger := sdk.Logger(ctx).With().Str("Class", "Source").Str("Method", "Open").Logger()
 	logger.Trace().Msg("Starting Open the Source Connector...")
@@ -115,23 +115,22 @@ func (s *Source) Open(ctx context.Context, pos sdk.Position) error {
 	return nil
 }
 
-// Read gets the next object from the GCS bucket
+// Read gets the next object from the GCS bucket.
 func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 	logger := sdk.Logger(ctx).With().Str("Class", "Source").Str("Method", "Read").Logger()
 	logger.Trace().Msg("Starting Read of the Source Connector...")
 
-	if s.iterator != nil {
-		r, err := s.iterator.Next(ctx)
-		if err != nil {
-			logger.Error().Stack().Err(err).Msg("Error while fetching the records")
-			return sdk.Record{}, err
-		}
-		logger.Trace().Msg("Successfully completed Read of the Source Connector...")
-		return r, nil
+	if s.iterator == nil {
+		return sdk.Record{}, errors.New("iterator is not initialized")
 	}
-	err := errors.New("iterator is not initialized")
-	logger.Error().Stack().Err(err)
-	return sdk.Record{}, err
+
+	r, err := s.iterator.Next(ctx)
+	if err != nil {
+		logger.Error().Stack().Err(err).Msg("Error while fetching the records")
+		return sdk.Record{}, err
+	}
+	logger.Trace().Msg("Successfully completed Read of the Source Connector...")
+	return r, nil
 }
 
 func (s *Source) Ack(ctx context.Context, position sdk.Position) error {
@@ -165,7 +164,7 @@ func (s *Source) bucketExists(ctx context.Context, bucketName string) error {
 
 	// check if the bucket exists
 	_, err := s.client.Bucket(bucketName).Attrs(ctx)
-	if err == storage.ErrBucketNotExist {
+	if errors.Is(err, storage.ErrBucketNotExist) {
 		logger.Error().Stack().Err(err).Msg("Error Bucker Not Exist")
 		return err
 	}

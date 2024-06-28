@@ -89,7 +89,6 @@ func (s *SnapshotIterator) Next(ctx context.Context) (sdk.Record, error) {
 		Type:      position.TypeSnapshot,
 		Timestamp: s.maxLastModified,
 	})
-
 	if err != nil {
 		logger.Error().Stack().Err(err).Msg("Error while marshalling the position")
 		return sdk.Record{}, err

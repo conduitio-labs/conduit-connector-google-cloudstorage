@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package connector
+package cloudstorage
 
 import (
 	"context"
@@ -90,7 +90,7 @@ func TestAcceptance(t *testing.T) {
 	})
 }
 
-// GenerateRecord needed to override because maximum object length for GCS is 1024 characters
+// GenerateRecord needed to override because maximum object length for GCS is 1024 characters.
 func (d GCSAcceptanceTestDriver) GenerateRecord(_ *testing.T, operation sdk.Operation) sdk.Record {
 	return sdk.Record{
 		Position:  sdk.Position(uuid.NewString()),

@@ -106,7 +106,7 @@ func (w *CDCIterator) Stop(ctx context.Context) {
 }
 
 // startCDC scans the GoogleCloudStorage bucket every polling period for changes
-// only detects the changes made after the w.lastModified
+// only detects the changes made after the w.lastModified.
 func (w *CDCIterator) startCDC() error {
 	defer close(w.caches)
 
@@ -186,16 +186,16 @@ func (w *CDCIterator) flush() error {
 	}
 }
 
-// fetchCacheEntries create the slice of entries/objects based upon the lastmodified time so they should be part of CDC
+// fetchCacheEntries create the slice of entries/objects based upon the lastmodified time so they should be part of CDC.
 func (w *CDCIterator) fetchCacheEntries(it *storage.ObjectIterator) ([]CacheEntry, error) {
 	cache := make([]CacheEntry, 0, 1000)
 	for {
 		objectAttrs, err := it.Next()
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			// Done iterating all the objects in the bucket
 			break
 		} else if err != nil {
-			return cache, fmt.Errorf("startCDC: Bucket(%q).Objects: %v", w.bucket, err)
+			return cache, fmt.Errorf("startCDC: Bucket(%q).Objects: %w", w.bucket, err)
 		}
 		if w.checkLastModified(objectAttrs) {
 			// Object got modified before lastmodified time
@@ -219,7 +219,7 @@ func (w *CDCIterator) fetchCacheEntries(it *storage.ObjectIterator) ([]CacheEntr
 	return cache, nil
 }
 
-// createRecord creates the record for the object fetched from GoogleCloudStorage (for updates and inserts)
+// createRecord creates the record for the object fetched from GoogleCloudStorage (for updates and inserts).
 func (w *CDCIterator) createRecord(entry CacheEntry, reader *storage.Reader) (sdk.Record, error) {
 	// build record
 	defer reader.Close()
@@ -246,7 +246,7 @@ func (w *CDCIterator) createRecord(entry CacheEntry, reader *storage.Reader) (sd
 	), nil
 }
 
-// createDeletedRecord creates the record for the object fetched from GoogleCloudStorage bucket (for deletes)
+// createDeletedRecord creates the record for the object fetched from GoogleCloudStorage bucket (for deletes).
 func (w *CDCIterator) createDeletedRecord(entry CacheEntry) (sdk.Record, error) {
 	p, err := json.Marshal(position.Position{
 		Key:       entry.key,
