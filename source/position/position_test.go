@@ -22,7 +22,7 @@ import (
 )
 
 func Test_ParseRecordPosition(t *testing.T) {
-	var positionTests = []struct {
+	positionTests := []struct {
 		name    string
 		wantErr bool
 		in      sdk.Position
@@ -85,7 +85,7 @@ func Test_ParseRecordPosition(t *testing.T) {
 }
 
 func Test_ConvertSnapshotPositionToCDC(t *testing.T) {
-	var positionTests = []struct {
+	positionTests := []struct {
 		name    string
 		wantErr bool
 		in      sdk.Position
