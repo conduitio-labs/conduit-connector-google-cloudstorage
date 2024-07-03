@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package connector
+package cloudstorage
 
 import (
 	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source"
@@ -25,17 +25,16 @@ var Connector = sdk.Connector{
 	NewDestination:   nil,
 }
 
-// version is set during the build process (i.e. the Makefile).
-// It follows Go's convention for module version, where the version
-// starts with the letter v, followed by a semantic version.
-var version = "v0.0.0-dev"
+// version is set during the build process with ldflags (see Makefile).
+// Default version matches default from runtime/debug.
+var version = "(devel)"
 
 // specification returns the connector's specification.
 func specification() sdk.Specification {
 	return sdk.Specification{
-		Name:        "Google Cloud Storage",
-		Summary:     "An Google Cloud Storage Source and Destination Connector for Conduit, Written in Go.",
-		Description: "Real time data transmission with google cloud storage",
+		Name:        "google-cloudstorage",
+		Summary:     "A Google Cloud Storage Connector for Conduit",
+		Description: "This connector exposes a source connector for Google Cloud Storage (GCS).",
 		Version:     version,
 		Author:      "InfraCloud Technologies & Meroxa, Inc.",
 	}

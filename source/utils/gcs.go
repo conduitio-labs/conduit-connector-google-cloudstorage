@@ -45,6 +45,7 @@ func CreateTestGCSBucket(client *storage.Client, projectID, bucketName string) e
 }
 
 func ClearAndDeleteTestGCSBucket(t *testing.T, client *storage.Client, bucket string) {
+	t.Helper()
 	ctx := context.Background()
 	it := client.Bucket(bucket).Objects(ctx, &storage.Query{
 		Versions: true,
@@ -52,7 +53,7 @@ func ClearAndDeleteTestGCSBucket(t *testing.T, client *storage.Client, bucket st
 
 	for {
 		objAttr, err := it.Next()
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			break
 		} else if err != nil {
 			t.Fatalf("could not iterate objects: %v", err)

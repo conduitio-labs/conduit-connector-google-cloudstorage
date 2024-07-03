@@ -21,7 +21,7 @@ import (
 )
 
 func TestParseGlobalConfig(t *testing.T) {
-	var configTests = []struct {
+	configTests := []struct {
 		name        string
 		wantErr     bool
 		in          map[string]string
