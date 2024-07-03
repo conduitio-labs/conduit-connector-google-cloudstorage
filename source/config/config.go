@@ -24,21 +24,21 @@ import (
 )
 
 const (
-	// ConfigKeyPollingPeriod is the config name for the GCS CDC polling period
+	// ConfigKeyPollingPeriod is the config name for the GCS CDC polling period.
 	ConfigKeyPollingPeriod = "pollingPeriod"
 
 	// DefaultPollingPeriod is the value assumed for the pooling period when the
-	// config omits the polling period parameter
+	// config omits the polling period parameter.
 	DefaultPollingPeriod = "1s"
 )
 
-// SourceConfig represents source configuration with GCS configurations
+// SourceConfig represents source configuration with GCS configurations.
 type SourceConfig struct {
 	config.Config
 	PollingPeriod time.Duration
 }
 
-// ParseSourceConfig attempts to parse the configurations into a SourceConfig struct that Source could utilize
+// ParseSourceConfig attempts to parse the configurations into a SourceConfig struct that Source could utilize.
 func ParseSourceConfig(ctx context.Context, cfg map[string]string) (SourceConfig, error) {
 	logger := sdk.Logger(ctx).With().Str("Method", "ParseSourceConfig").Logger()
 	logger.Trace().Msg("Start Parsing the Config")

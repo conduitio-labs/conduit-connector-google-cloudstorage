@@ -46,7 +46,6 @@ func TestConfigureSource_FailsWhenConfigInvalid(t *testing.T) {
 func TestTeardownSource_NoOpen(t *testing.T) {
 	con := NewSource()
 	err := con.Teardown(context.Background())
-
 	if err != nil {
 		t.Errorf("expected no error but, got %v", err)
 	}
