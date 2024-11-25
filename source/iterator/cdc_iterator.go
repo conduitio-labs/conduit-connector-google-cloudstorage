@@ -26,6 +26,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/position"
+	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"google.golang.org/api/iterator"
 	"gopkg.in/tomb.v2"
@@ -39,7 +40,7 @@ const (
 type CDCIterator struct {
 	bucket        string
 	client        *storage.Client
-	buffer        chan sdk.Record
+	buffer        chan opencdc.Record
 	ticker        *time.Ticker
 	lastModified  time.Time
 	caches        chan []CacheEntry
@@ -62,7 +63,7 @@ func NewCDCIterator(ctx context.Context, bucket string, pollingPeriod time.Durat
 	cdc := CDCIterator{
 		bucket:        bucket,
 		client:        client,
-		buffer:        make(chan sdk.Record, 1),
+		buffer:        make(chan opencdc.Record, 1),
 		caches:        make(chan []CacheEntry),
 		ticker:        time.NewTicker(pollingPeriod),
 		isTruncated:   true,
@@ -80,16 +81,16 @@ func NewCDCIterator(ctx context.Context, bucket string, pollingPeriod time.Durat
 }
 
 // Next returns the next record from the buffer.
-func (w *CDCIterator) Next(ctx context.Context) (sdk.Record, error) {
+func (w *CDCIterator) Next(ctx context.Context) (opencdc.Record, error) {
 	select {
 	case r := <-w.buffer:
 		return r, nil
 	case <-w.tomb.Dead():
-		return sdk.Record{}, w.tomb.Err()
+		return opencdc.Record{}, w.tomb.Err()
 	case <-ctx.Done():
-		return sdk.Record{}, ctx.Err()
+		return opencdc.Record{}, ctx.Err()
 	default:
-		return sdk.Record{}, sdk.ErrBackoffRetry
+		return opencdc.Record{}, sdk.ErrBackoffRetry
 	}
 }
 
@@ -157,7 +158,7 @@ func (w *CDCIterator) flush() error {
 		case cache := <-w.caches:
 			for i := 0; i < len(cache); i++ {
 				entry := cache[i]
-				var output sdk.Record
+				var output opencdc.Record
 
 				if entry.deleteMarker {
 					var err error
@@ -165,11 +166,8 @@ func (w *CDCIterator) flush() error {
 						return err
 					}
 				} else {
-					reader, err := w.client.Bucket(w.bucket).Object(entry.key).NewReader(w.tomb.Context(nil)) //nolint:staticcheck // SA1012 tomb expects nil
-					if err != nil {
-						return err
-					}
-					output, err = w.createRecord(entry, reader)
+					var err error
+					output, err = w.createRecord(entry)
 					if err != nil {
 						return err
 					}
@@ -220,12 +218,17 @@ func (w *CDCIterator) fetchCacheEntries(it *storage.ObjectIterator) ([]CacheEntr
 }
 
 // createRecord creates the record for the object fetched from GoogleCloudStorage (for updates and inserts).
-func (w *CDCIterator) createRecord(entry CacheEntry, reader *storage.Reader) (sdk.Record, error) {
+func (w *CDCIterator) createRecord(entry CacheEntry) (opencdc.Record, error) {
+	reader, err := w.client.Bucket(w.bucket).Object(entry.key).NewReader(w.tomb.Context(nil)) //nolint:staticcheck // SA1012 tomb expects nil
+	if err != nil {
+		return opencdc.Record{}, err
+	}
+
 	// build record
 	defer reader.Close()
 	rawBody, err := io.ReadAll(reader)
 	if err != nil {
-		return sdk.Record{}, err
+		return opencdc.Record{}, err
 	}
 	p, err := json.Marshal(position.Position{
 		Key:       entry.key,
@@ -233,7 +236,7 @@ func (w *CDCIterator) createRecord(entry CacheEntry, reader *storage.Reader) (sd
 		Type:      position.TypeCDC,
 	})
 	if err != nil {
-		return sdk.Record{}, err
+		return opencdc.Record{}, err
 	}
 
 	return sdk.Util.Source.NewRecordCreate(
@@ -241,26 +244,38 @@ func (w *CDCIterator) createRecord(entry CacheEntry, reader *storage.Reader) (sd
 		map[string]string{
 			MetadataContentType: reader.Attrs.ContentType,
 		},
-		sdk.RawData(entry.key),
-		sdk.RawData(rawBody),
+		opencdc.RawData(entry.key),
+		opencdc.RawData(rawBody),
 	), nil
 }
 
 // createDeletedRecord creates the record for the object fetched from GoogleCloudStorage bucket (for deletes).
-func (w *CDCIterator) createDeletedRecord(entry CacheEntry) (sdk.Record, error) {
+func (w *CDCIterator) createDeletedRecord(entry CacheEntry) (opencdc.Record, error) {
+	reader, err := w.client.Bucket(w.bucket).Object(entry.key).NewReader(w.tomb.Context(nil)) //nolint:staticcheck // SA1012 tomb expects nil
+	if err != nil {
+		return opencdc.Record{}, err
+	}
+
+	// build record
+	defer reader.Close()
+	rawBody, err := io.ReadAll(reader)
+	if err != nil {
+		return opencdc.Record{}, err
+	}
 	p, err := json.Marshal(position.Position{
 		Key:       entry.key,
 		Timestamp: entry.lastModified,
 		Type:      position.TypeCDC,
 	})
 	if err != nil {
-		return sdk.Record{}, err
+		return opencdc.Record{}, err
 	}
 
 	return sdk.Util.Source.NewRecordDelete(
 		p,
 		map[string]string{},
-		sdk.RawData(entry.key),
+		opencdc.RawData(entry.key),
+		opencdc.RawData(rawBody),
 	), nil
 }
 

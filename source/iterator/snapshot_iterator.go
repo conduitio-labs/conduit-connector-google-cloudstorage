@@ -23,6 +23,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/position"
+	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
@@ -52,13 +53,13 @@ func NewSnapshotIterator(ctx context.Context, bucket string, client *storage.Cli
 
 // Next returns the next record in the iterator.
 // returns an empty record and an error if anything wrong happened.
-func (s *SnapshotIterator) Next(ctx context.Context) (sdk.Record, error) {
+func (s *SnapshotIterator) Next(ctx context.Context) (opencdc.Record, error) {
 	logger := sdk.Logger(ctx).With().Str("Class", "SnapshotIterator").Str("Method", "Next").Logger()
 	logger.Trace().Msg("Starting The Next Method of SnapshotIterator Iterator")
 
 	objectAttrs, err := s.iterator.Next()
 	if err != nil {
-		return sdk.Record{}, err
+		return opencdc.Record{}, err
 	}
 	// read object
 	objectReader, err := s.client.Bucket(s.bucket).Object(objectAttrs.Name).NewReader(ctx)
@@ -70,12 +71,12 @@ func (s *SnapshotIterator) Next(ctx context.Context) (sdk.Record, error) {
 	}(objectReader)
 
 	if err != nil {
-		return sdk.Record{}, fmt.Errorf("could not fetch the next object: %w", err)
+		return opencdc.Record{}, fmt.Errorf("could not fetch the next object: %w", err)
 	}
 
 	ObjectData, err := io.ReadAll(objectReader)
 	if err != nil {
-		return sdk.Record{}, fmt.Errorf("could not read the object's body: %w", err)
+		return opencdc.Record{}, fmt.Errorf("could not read the object's body: %w", err)
 	}
 
 	// check if maxLastModified should be updated
@@ -91,7 +92,7 @@ func (s *SnapshotIterator) Next(ctx context.Context) (sdk.Record, error) {
 	})
 	if err != nil {
 		logger.Error().Stack().Err(err).Msg("Error while marshalling the position")
-		return sdk.Record{}, err
+		return opencdc.Record{}, err
 	}
 
 	// create the record
@@ -100,8 +101,8 @@ func (s *SnapshotIterator) Next(ctx context.Context) (sdk.Record, error) {
 		map[string]string{
 			MetadataContentType: objectAttrs.ContentType,
 		},
-		sdk.RawData(objectAttrs.Name),
-		sdk.RawData(ObjectData),
+		opencdc.RawData(objectAttrs.Name),
+		opencdc.RawData(ObjectData),
 	)
 
 	return output, nil

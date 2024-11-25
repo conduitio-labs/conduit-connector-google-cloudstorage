@@ -20,10 +20,11 @@ import (
 	"fmt"
 
 	"cloud.google.com/go/storage"
-	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/config"
-	srcConfig "github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/config"
+	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/config"
 	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/iterator"
 	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/position"
+	commonsConfig "github.com/conduitio/conduit-commons/config"
+	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"google.golang.org/api/option"
 )
@@ -31,13 +32,13 @@ import (
 // Source connector.
 type Source struct {
 	sdk.UnimplementedSource
-	config   srcConfig.SourceConfig
+	config   config.Config
 	client   *storage.Client
 	iterator Iterator
 }
 
 type Iterator interface {
-	Next(ctx context.Context) (sdk.Record, error)
+	Next(ctx context.Context) (opencdc.Record, error)
 	Stop(ctx context.Context)
 }
 
@@ -45,46 +46,27 @@ func NewSource() sdk.Source {
 	return sdk.SourceWithMiddleware(&Source{}, sdk.DefaultSourceMiddleware()...)
 }
 
-func (s *Source) Parameters() map[string]sdk.Parameter {
-	return map[string]sdk.Parameter{
-		config.ConfigKeyGCPServiceAccountKey: {
-			Default:     "",
-			Required:    true,
-			Description: "Google Cloud Storage ServiceAccountKey",
-		},
-		config.ConfigKeyGCSBucket: {
-			Default:     "",
-			Required:    true,
-			Description: "Google Cloud Storage Bucket",
-		},
-		srcConfig.ConfigKeyPollingPeriod: {
-			Default:     srcConfig.DefaultPollingPeriod,
-			Required:    false,
-			Description: "polling period for the CDC mode, formatted as a time.Duration string.",
-		},
-	}
+func (s *Source) Parameters() commonsConfig.Parameters {
+	return s.config.Parameters()
 }
 
 // Configure parses and stores the configurations
 // returns an error in case of invalid config.
-func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
+func (s *Source) Configure(ctx context.Context, cfgRaw commonsConfig.Config) error {
 	logger := sdk.Logger(ctx).With().Str("Class", "Source").Str("Method", "Configure").Logger()
 	logger.Trace().Msg("Starting Configuring the Source Connector...")
 
-	sourceConfig, err := srcConfig.ParseSourceConfig(ctx, cfg)
+	err := sdk.Util.ParseConfig(ctx, cfgRaw, &s.config, NewSource().Parameters())
 	if err != nil {
-		logger.Error().Stack().Err(err).Msg("Error While parsing the Source Config")
-		return err
+		return err //nolint: wrapcheck // not needed here
 	}
-
-	s.config = sourceConfig
 
 	logger.Trace().Msg("Successfully completed configuring the source connector...")
 	return nil
 }
 
 // Open prepare the plugin to start sending records from the given position.
-func (s *Source) Open(ctx context.Context, pos sdk.Position) error {
+func (s *Source) Open(ctx context.Context, pos opencdc.Position) error {
 	logger := sdk.Logger(ctx).With().Str("Class", "Source").Str("Method", "Open").Logger()
 	logger.Trace().Msg("Starting Open the Source Connector...")
 
@@ -94,19 +76,19 @@ func (s *Source) Open(ctx context.Context, pos sdk.Position) error {
 		return err
 	}
 
-	s.client, err = storage.NewClient(ctx, option.WithCredentialsJSON([]byte(s.config.GoogleCloudServiceAccountKey)))
+	s.client, err = storage.NewClient(ctx, option.WithCredentialsJSON([]byte(s.config.ServiceAccountKey)))
 	if err != nil {
 		logger.Error().Stack().Err(err).Msg("Error While Creating the Storage Client")
 		return err
 	}
 
-	err = s.bucketExists(ctx, s.config.GoogleCloudStorageBucket)
+	err = s.bucketExists(ctx, s.config.Bucket)
 	if err != nil {
 		logger.Error().Stack().Err(err).Msg("Error While Checking the Bucket Existence")
 		return err
 	}
 
-	s.iterator, err = iterator.NewCombinedIterator(ctx, s.config.GoogleCloudStorageBucket, s.config.PollingPeriod, s.client, p)
+	s.iterator, err = iterator.NewCombinedIterator(ctx, s.config.Bucket, s.config.PollingPeriod, s.client, p)
 	if err != nil {
 		logger.Error().Stack().Err(err).Msg("Error while create a combined iterator")
 		return fmt.Errorf("couldn't create a combined iterator: %w", err)
@@ -116,24 +98,24 @@ func (s *Source) Open(ctx context.Context, pos sdk.Position) error {
 }
 
 // Read gets the next object from the GCS bucket.
-func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
+func (s *Source) Read(ctx context.Context) (opencdc.Record, error) {
 	logger := sdk.Logger(ctx).With().Str("Class", "Source").Str("Method", "Read").Logger()
 	logger.Trace().Msg("Starting Read of the Source Connector...")
 
 	if s.iterator == nil {
-		return sdk.Record{}, errors.New("iterator is not initialized")
+		return opencdc.Record{}, errors.New("iterator is not initialized")
 	}
 
 	r, err := s.iterator.Next(ctx)
 	if err != nil {
 		logger.Error().Stack().Err(err).Msg("Error while fetching the records")
-		return sdk.Record{}, err
+		return opencdc.Record{}, err
 	}
 	logger.Trace().Msg("Successfully completed Read of the Source Connector...")
 	return r, nil
 }
 
-func (s *Source) Ack(ctx context.Context, position sdk.Position) error {
+func (s *Source) Ack(ctx context.Context, position opencdc.Position) error {
 	sdk.Logger(ctx).Debug().Str("Class", "Source").Str("Method", "Ack").Str("position", string(position)).Msg("got ack")
 	return nil
 }

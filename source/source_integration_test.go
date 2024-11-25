@@ -24,9 +24,10 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/config"
+	sourceConfig "github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/config"
 	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/position"
 	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/utils"
+	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/google/uuid"
 )
@@ -40,7 +41,7 @@ func TestSource_SuccessfulSnapshot(t *testing.T) {
 	client, cfg := prepareIntegrationTest(t)
 
 	ctx := context.Background()
-	testBucket := cfg[config.ConfigKeyGCSBucket]
+	testBucket := cfg[sourceConfig.ConfigBucket]
 	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
@@ -58,7 +59,7 @@ func TestSource_SuccessfulSnapshot(t *testing.T) {
 	testFiles := addObjectsToTheBucket(ctx, t, testBucket, client, 5)
 
 	// read and assert
-	var record sdk.Record
+	var record opencdc.Record
 	for _, file := range testFiles {
 		record, err = readAndAssert(ctx, t, source, file)
 		if err != nil {
@@ -82,7 +83,7 @@ func TestSource_SnapshotRestart(t *testing.T) {
 	client, cfg := prepareIntegrationTest(t)
 
 	ctx := context.Background()
-	testBucket := cfg[config.ConfigKeyGCSBucket]
+	testBucket := cfg[sourceConfig.ConfigBucket]
 	source := &Source{}
 
 	err := source.Configure(ctx, cfg)
@@ -98,7 +99,7 @@ func TestSource_SnapshotRestart(t *testing.T) {
 	testFiles := addObjectsToTheBucket(ctx, t, testBucket, client, numberOfFiles)
 
 	// read and assert until last file is left
-	var record sdk.Record
+	var record opencdc.Record
 	for i := 0; i < numberOfFiles-1; i++ {
 		record, err = readAndAssert(ctx, t, source, testFiles[i])
 		if err != nil {
@@ -154,7 +155,7 @@ func TestSource_SnapshotRestartAfterLastRecord(t *testing.T) {
 	client, cfg := prepareIntegrationTest(t)
 
 	ctx := context.Background()
-	testBucket := cfg[config.ConfigKeyGCSBucket]
+	testBucket := cfg[sourceConfig.ConfigBucket]
 	source := &Source{}
 
 	err := source.Configure(ctx, cfg)
@@ -170,7 +171,7 @@ func TestSource_SnapshotRestartAfterLastRecord(t *testing.T) {
 	testFiles := addObjectsToTheBucket(ctx, t, testBucket, client, numberOfFiles)
 
 	// read and assert until last file is left
-	var record sdk.Record
+	var record opencdc.Record
 	for i := 0; i < numberOfFiles; i++ {
 		record, err = readAndAssert(ctx, t, source, testFiles[i])
 		if err != nil {
@@ -231,7 +232,7 @@ func TestSource_SnapshotStartFromNonNilPosition(t *testing.T) {
 	client, cfg := prepareIntegrationTest(t)
 
 	ctx := context.Background()
-	testBucket := cfg[config.ConfigKeyGCSBucket]
+	testBucket := cfg[sourceConfig.ConfigBucket]
 	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
@@ -302,7 +303,7 @@ func TestSource_NonExistentBucket(t *testing.T) {
 	}()
 
 	// set the bucket name to a unique uuid
-	cfg[config.ConfigKeyGCSBucket] = uuid.NewString()
+	cfg[sourceConfig.ConfigBucket] = uuid.NewString()
 
 	err := source.Configure(ctx, cfg)
 	if err != nil {
@@ -320,7 +321,7 @@ func TestSource_StartCDCAfterEmptyBucket(t *testing.T) {
 	client, cfg := prepareIntegrationTest(t)
 
 	ctx := context.Background()
-	testBucket := cfg[config.ConfigKeyGCSBucket]
+	testBucket := cfg[sourceConfig.ConfigBucket]
 	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
@@ -360,7 +361,7 @@ func TestSource_CDC_ReadRecordsUpdate(t *testing.T) {
 	client, cfg := prepareIntegrationTest(t)
 
 	ctx := context.Background()
-	testBucket := cfg[config.ConfigKeyGCSBucket]
+	testBucket := cfg[sourceConfig.ConfigBucket]
 	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
@@ -414,7 +415,7 @@ func TestSource_CDC_ReadRecordsInsert(t *testing.T) {
 	client, cfg := prepareIntegrationTest(t)
 
 	ctx := context.Background()
-	testBucket := cfg[config.ConfigKeyGCSBucket]
+	testBucket := cfg[sourceConfig.ConfigBucket]
 	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
@@ -468,7 +469,7 @@ func TestSource_CDC_ReadRecordsInsertContextCancellation(t *testing.T) {
 	client, cfg := prepareIntegrationTest(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	testBucket := cfg[config.ConfigKeyGCSBucket]
+	testBucket := cfg[sourceConfig.ConfigBucket]
 	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
@@ -523,7 +524,7 @@ func TestSource_CDCRestart(t *testing.T) {
 	client, cfg := prepareIntegrationTest(t)
 
 	ctx := context.Background()
-	testBucket := cfg[config.ConfigKeyGCSBucket]
+	testBucket := cfg[sourceConfig.ConfigBucket]
 	source := &Source{}
 	err := source.Configure(ctx, cfg)
 	if err != nil {
@@ -609,7 +610,7 @@ func TestSource_CDCPositionToCaptureInsertandDeleteActions(t *testing.T) {
 	startTime := time.Now()
 
 	ctx := context.Background()
-	testBucket := cfg[config.ConfigKeyGCSBucket]
+	testBucket := cfg[sourceConfig.ConfigBucket]
 	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
@@ -667,7 +668,7 @@ func TestSource_CDCPositionToCaptureInsertandDeleteActions(t *testing.T) {
 	if strings.Compare(string(obj2.Key.Bytes()), testFileName) != 0 {
 		t.Fatalf("expected key: %s, got: %s", testFileName, string(obj2.Key.Bytes()))
 	}
-	if obj2.Operation != sdk.OperationDelete {
+	if obj2.Operation != opencdc.OperationDelete {
 		t.Fatalf("expected action: %s, got: %s", expectedAction, obj2.Operation.String())
 	}
 }
@@ -676,7 +677,7 @@ func TestSource_CDC_DeleteWithVersioning(t *testing.T) {
 	client, cfg := prepareIntegrationTest(t)
 
 	ctx := context.Background()
-	testBucket := cfg[config.ConfigKeyGCSBucket]
+	testBucket := cfg[sourceConfig.ConfigBucket]
 	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
@@ -721,7 +722,7 @@ func TestSource_CDC_DeleteWithVersioning(t *testing.T) {
 	if strings.Compare(string(obj.Key.Bytes()), testFileName) != 0 {
 		t.Fatalf("expected key: %s, got: %s", testFileName, string(obj.Key.Bytes()))
 	}
-	if obj.Operation != sdk.OperationDelete {
+	if obj.Operation != opencdc.OperationDelete {
 		t.Fatalf("expected action: %s, got: %s", expectedAction, obj.Operation.String())
 	}
 }
@@ -730,7 +731,7 @@ func TestSource_CDC_EmptyBucketWithDeletedObjects(t *testing.T) {
 	client, cfg := prepareIntegrationTest(t)
 
 	ctx := context.Background()
-	testBucket := cfg[config.ConfigKeyGCSBucket]
+	testBucket := cfg[sourceConfig.ConfigBucket]
 	source := &Source{}
 	defer func() {
 		_ = source.Teardown(ctx)
@@ -780,7 +781,7 @@ func TestOpenSource_FailsWhenClientCreation(t *testing.T) {
 	t.Setenv("GCP_ProjectID", "projectid")
 	ctx := context.Background()
 
-	cfg, err := utils.ParseIntegrationConfig()
+	cfg, _, err := utils.ParseIntegrationConfig()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -803,9 +804,9 @@ func TestOpenSource_FailsWhenClientCreation(t *testing.T) {
 }
 
 func TestOpenSource_FailsParsePosition(t *testing.T) {
-	cfg, err := utils.ParseIntegrationConfig()
+	cfg, _, err := utils.ParseIntegrationConfig()
 	if err != nil {
-		t.Fatal(err)
+		t.Skip(err)
 	}
 
 	ctx := context.Background()
@@ -827,9 +828,9 @@ func TestOpenSource_FailsParsePosition(t *testing.T) {
 }
 
 func TestOpenSource_InvalidPositionType(t *testing.T) {
-	cfg, err := utils.ParseIntegrationConfig()
+	cfg, _, err := utils.ParseIntegrationConfig()
 	if err != nil {
-		t.Fatal(err)
+		t.Skip(err)
 	}
 
 	ctx := context.Background()
@@ -861,7 +862,7 @@ func TestOpenSource_InvalidPositionType(t *testing.T) {
 }
 
 func prepareIntegrationTest(t *testing.T) (*storage.Client, map[string]string) {
-	cfg, err := utils.ParseIntegrationConfig()
+	cfg, projectID, err := utils.ParseIntegrationConfig()
 	if err != nil {
 		t.Skip(err)
 	}
@@ -872,7 +873,7 @@ func prepareIntegrationTest(t *testing.T) (*storage.Client, map[string]string) {
 	}
 
 	bucket := "conduit-gcs-source-test-" + uuid.NewString()
-	if err := utils.CreateTestGCSBucket(client, cfg[utils.ProjectID], bucket); err != nil {
+	if err := utils.CreateTestGCSBucket(client, projectID, bucket); err != nil {
 		t.Fatalf("could not create test gcs client: %v", err)
 	}
 	t.Cleanup(func() {
@@ -882,7 +883,7 @@ func prepareIntegrationTest(t *testing.T) (*storage.Client, map[string]string) {
 		}
 	})
 
-	cfg[config.ConfigKeyGCSBucket] = bucket
+	cfg[sourceConfig.ConfigBucket] = bucket
 
 	return client, cfg
 }
@@ -904,7 +905,7 @@ func addObjectsToTheBucket(ctx context.Context, t *testing.T, testBucket string,
 }
 
 // readWithTimeout will try to read the next record until the timeout is reached.
-func readWithTimeout(ctx context.Context, source *Source, timeout time.Duration) (sdk.Record, error) {
+func readWithTimeout(ctx context.Context, source *Source, timeout time.Duration) (opencdc.Record, error) {
 	timeoutTimer := time.After(timeout)
 
 	for {
@@ -917,14 +918,14 @@ func readWithTimeout(ctx context.Context, source *Source, timeout time.Duration)
 		case <-time.After(time.Millisecond * 100):
 			// try again
 		case <-timeoutTimer:
-			return sdk.Record{}, context.DeadlineExceeded
+			return opencdc.Record{}, context.DeadlineExceeded
 		}
 	}
 }
 
 // readAndAssert will read the next record and assert that the returned record is
 // the same as the wanted object.
-func readAndAssert(ctx context.Context, t *testing.T, source *Source, want Object) (sdk.Record, error) {
+func readAndAssert(ctx context.Context, t *testing.T, source *Source, want Object) (opencdc.Record, error) {
 	got, err := source.Read(ctx)
 	if err != nil {
 		return got, err
