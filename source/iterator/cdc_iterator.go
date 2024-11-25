@@ -166,8 +166,11 @@ func (w *CDCIterator) flush() error {
 						return err
 					}
 				} else {
-					var err error
-					output, err = w.createRecord(entry)
+					reader, err := w.client.Bucket(w.bucket).Object(entry.key).NewReader(w.tomb.Context(nil)) //nolint:staticcheck // SA1012 tomb expects nil
+					if err != nil {
+						return err
+					}
+					output, err = w.createRecord(entry, reader)
 					if err != nil {
 						return err
 					}
@@ -218,12 +221,7 @@ func (w *CDCIterator) fetchCacheEntries(it *storage.ObjectIterator) ([]CacheEntr
 }
 
 // createRecord creates the record for the object fetched from GoogleCloudStorage (for updates and inserts).
-func (w *CDCIterator) createRecord(entry CacheEntry) (opencdc.Record, error) {
-	reader, err := w.client.Bucket(w.bucket).Object(entry.key).NewReader(w.tomb.Context(nil)) //nolint:staticcheck // SA1012 tomb expects nil
-	if err != nil {
-		return opencdc.Record{}, err
-	}
-
+func (w *CDCIterator) createRecord(entry CacheEntry, reader *storage.Reader) (opencdc.Record, error) {
 	// build record
 	defer reader.Close()
 	rawBody, err := io.ReadAll(reader)
@@ -251,17 +249,6 @@ func (w *CDCIterator) createRecord(entry CacheEntry) (opencdc.Record, error) {
 
 // createDeletedRecord creates the record for the object fetched from GoogleCloudStorage bucket (for deletes).
 func (w *CDCIterator) createDeletedRecord(entry CacheEntry) (opencdc.Record, error) {
-	reader, err := w.client.Bucket(w.bucket).Object(entry.key).NewReader(w.tomb.Context(nil)) //nolint:staticcheck // SA1012 tomb expects nil
-	if err != nil {
-		return opencdc.Record{}, err
-	}
-
-	// build record
-	defer reader.Close()
-	rawBody, err := io.ReadAll(reader)
-	if err != nil {
-		return opencdc.Record{}, err
-	}
 	p, err := json.Marshal(position.Position{
 		Key:       entry.key,
 		Timestamp: entry.lastModified,
@@ -275,7 +262,7 @@ func (w *CDCIterator) createDeletedRecord(entry CacheEntry) (opencdc.Record, err
 		p,
 		map[string]string{},
 		opencdc.RawData(entry.key),
-		opencdc.RawData(rawBody),
+		nil,
 	), nil
 }
 
