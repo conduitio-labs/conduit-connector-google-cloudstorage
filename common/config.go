@@ -1,4 +1,4 @@
-// Copyright © 2023 Meroxa, Inc.
+// Copyright © 2022 Meroxa, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build tools
+package common
 
-package cloudstorage
-
-import (
-	_ "github.com/conduitio/conduit-commons/paramgen"
-	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
-	_ "mvdan.cc/gofumpt"
-)
+// Config represents configuration needed for Google cloud storage.
+type Config struct {
+	// Bucket is the name for Google cloud storage bucket.
+	Bucket string `json:"bucket" validate:"required"`
+	// ServiceAccountKey is the Google cloud platform service account key.
+	ServiceAccountKey string `json:"serviceAccountKey" validate:"required"`
+}

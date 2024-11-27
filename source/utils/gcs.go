@@ -21,19 +21,14 @@ import (
 	"testing"
 
 	"cloud.google.com/go/storage"
-	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/config"
-	sourceConfig "github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/config"
+	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/config"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
 
-const (
-	ProjectID = "projectID"
-)
-
 func NewGCSClient(cfg map[string]string) (*storage.Client, error) {
 	ctx := context.Background()
-	return storage.NewClient(ctx, option.WithCredentialsJSON([]byte(cfg[config.ConfigKeyGCPServiceAccountKey])))
+	return storage.NewClient(ctx, option.WithCredentialsJSON([]byte(cfg[config.ConfigServiceAccountKey])))
 }
 
 func CreateTestGCSBucket(client *storage.Client, projectID, bucketName string) error {
@@ -71,26 +66,25 @@ func ClearAndDeleteTestGCSBucket(t *testing.T, client *storage.Client, bucket st
 	}
 }
 
-func ParseIntegrationConfig() (map[string]string, error) {
+func ParseIntegrationConfig() (map[string]string, string, error) {
 	serviceAccountKey := os.Getenv("GCP_ServiceAccount_Key")
 	if serviceAccountKey == "" {
-		return map[string]string{}, errors.New("GCP_ServiceAccount_Key env var must be set")
+		return map[string]string{}, "", errors.New("GCP_ServiceAccount_Key env var must be set")
 	}
 
 	projectid := os.Getenv("GCP_ProjectID")
 	if projectid == "" {
-		return map[string]string{}, errors.New("GCP_ProjectID env var must be set")
+		return map[string]string{}, "", errors.New("GCP_ProjectID env var must be set")
 	}
 
 	bucket := os.Getenv("GCP_Bucket")
 	if bucket == "" {
-		return map[string]string{}, errors.New("GCP_Bucket env var must be set")
+		return map[string]string{}, "", errors.New("GCP_Bucket env var must be set")
 	}
 
 	return map[string]string{
-		config.ConfigKeyGCPServiceAccountKey: serviceAccountKey,
-		config.ConfigKeyGCSBucket:            bucket,
-		ProjectID:                            projectid,
-		sourceConfig.ConfigKeyPollingPeriod:  "100ms",
-	}, nil
+		config.ConfigServiceAccountKey: serviceAccountKey,
+		config.ConfigBucket:            bucket,
+		config.ConfigPollingPeriod:     "100ms",
+	}, projectid, nil
 }

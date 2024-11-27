@@ -22,6 +22,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/conduitio-labs/conduit-connector-google-cloudstorage/source/position"
+	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"google.golang.org/api/iterator"
 )
@@ -81,7 +82,7 @@ func NewCombinedIterator(ctx context.Context, bucket string, pollingPeriod time.
 	return c, nil
 }
 
-func (c *CombinedIterator) Next(ctx context.Context) (sdk.Record, error) {
+func (c *CombinedIterator) Next(ctx context.Context) (opencdc.Record, error) {
 	logger := sdk.Logger(ctx).With().Str("Class", "CombinedIterator").Str("Method", "Next").Logger()
 	logger.Trace().Msg("Starting The Next Method of Combined Iterator")
 
@@ -97,12 +98,12 @@ func (c *CombinedIterator) Next(ctx context.Context) (sdk.Record, error) {
 			e := c.switchToCDCIterator(ctx)
 			if e != nil {
 				logger.Error().Stack().Err(e).Msg("Error Switching from snapshot to the CDC iterator")
-				return sdk.Record{}, e
+				return opencdc.Record{}, e
 			}
-			return sdk.Record{}, sdk.ErrBackoffRetry
+			return opencdc.Record{}, sdk.ErrBackoffRetry
 		} else if err != nil {
 			logger.Error().Stack().Err(err).Msg("Error During the snapshot iterator")
-			return sdk.Record{}, err
+			return opencdc.Record{}, err
 		}
 
 		if !c.snapshotIterator.HasNext(ctx) {
@@ -110,13 +111,13 @@ func (c *CombinedIterator) Next(ctx context.Context) (sdk.Record, error) {
 			err := c.switchToCDCIterator(ctx)
 			if err != nil {
 				logger.Error().Stack().Err(err).Msg("Error Switching from snapshot to the CDC iterator")
-				return sdk.Record{}, err
+				return opencdc.Record{}, err
 			}
 			// change the last record's position to CDC
 			record.Position, err = position.ConvertToCDCPosition(record.Position)
 			if err != nil {
 				logger.Error().Stack().Err(err).Msg("Error Converting to CDC position")
-				return sdk.Record{}, err
+				return opencdc.Record{}, err
 			}
 		}
 		logger.Trace().Msg("Successfully return the record from the snapshot iterator")
@@ -127,7 +128,7 @@ func (c *CombinedIterator) Next(ctx context.Context) (sdk.Record, error) {
 		return c.cdcIterator.Next(ctx)
 	default:
 		logger.Error().Msg("Both the itertors are not initailsed")
-		return sdk.Record{}, errors.New("no initialized iterator")
+		return opencdc.Record{}, errors.New("no initialized iterator")
 	}
 }
 
