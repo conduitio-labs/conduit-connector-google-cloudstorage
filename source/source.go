@@ -58,7 +58,7 @@ func (s *Source) Configure(ctx context.Context, cfgRaw commonsConfig.Config) err
 
 	err := sdk.Util.ParseConfig(ctx, cfgRaw, &s.config, NewSource().Parameters())
 	if err != nil {
-		return fmt.Errorf("invalid config: %w", err)
+		return fmt.Errorf("error parsing config: %w", err)
 	}
 
 	logger.Trace().Msg("Successfully completed configuring the source connector...")

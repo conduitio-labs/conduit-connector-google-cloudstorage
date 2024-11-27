@@ -34,7 +34,7 @@ func TestSource_Configure_failure(t *testing.T) {
 	})
 
 	is.True(err != nil)
-	is.Equal(err.Error(), `config invalid: error validating "bucket": required parameter is not provided`)
+	is.Equal(err.Error(), `error parsing config: config invalid: error validating "bucket": required parameter is not provided`)
 }
 
 func TestTeardownSource_NoOpen(t *testing.T) {
