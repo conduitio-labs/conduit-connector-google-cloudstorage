@@ -90,6 +90,4 @@ the differentiation. So we consider all the objects in the bucket irrespective o
 If a pipeline restarts during the snapshot, then the connector will start scanning the objects from the beginning of
 the bucket, which could result in duplications.
 
-### Useful resources
-
 ![scarf pixel](https://static.scarf.sh/a.png?x-pxid=3d30de4f-fb82-4aeb-9f0c-e62e7e39163b)
