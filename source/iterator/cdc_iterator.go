@@ -57,7 +57,14 @@ type CacheEntry struct {
 }
 
 // NewCDCIterator returns a CDCIterator and starts the process of listening to changes every pollingPeriod.
-func NewCDCIterator(ctx context.Context, bucket string, pollingPeriod time.Duration, client *storage.Client, from time.Time, fromKey string) (*CDCIterator, error) {
+func NewCDCIterator(
+	ctx context.Context,
+	bucket string,
+	pollingPeriod time.Duration,
+	client *storage.Client,
+	from time.Time,
+	fromKey string,
+) (*CDCIterator, error) {
 	sdk.Logger(ctx).Trace().Str("Method", "NewCDCIterator").Msg("NewCDCIterator: Starting the NewCDCIterator")
 
 	cdc := CDCIterator{
@@ -267,6 +274,7 @@ func (w *CDCIterator) createDeletedRecord(entry CacheEntry) (opencdc.Record, err
 }
 
 func (w *CDCIterator) checkLastModified(objectAttrs *storage.ObjectAttrs) bool {
+	//nolint:staticcheck // I don't dare to change this condition
 	return !((objectAttrs.Updated.After(w.lastModified) || objectAttrs.Deleted.After(w.lastModified)) || // check if the object is updated or deleted after the last modified time
 		((objectAttrs.Updated.Equal(w.lastModified) || objectAttrs.Deleted.Equal(w.lastModified)) && strings.Compare(objectAttrs.Name, w.lastEntryKey) > 0)) // If the object updated or deleted at last modified time then lexicographically check is done
 }

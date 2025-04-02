@@ -6,7 +6,7 @@ build:
 
 .PHONY: test
 test:
-	go test $(GOTEST_FLAGS) -v -race ./...
+	go test $(GOTEST_FLAGS) -race ./...
 
 .PHONY: generate
 generate:
@@ -14,8 +14,8 @@ generate:
 
 .PHONY: install-tools
 install-tools:
-	@echo Installing tools from tools.go
-	@go list -e -f '{{ join .Imports "\n" }}' tools.go | xargs -I % go list -f "%@{{.Module.Version}}" % | xargs -tI % go install %
+	@echo Installing tools from tools/go.mod
+	@go list -modfile=tools/go.mod tool | xargs -I % go list -modfile=tools/go.mod -f "%@{{.Module.Version}}" % | xargs -tI % go install %
 	@go mod tidy
 
 .PHONY: fmt
@@ -24,4 +24,4 @@ fmt:
 
 .PHONY: lint
 lint:
-	golangci-lint run -v
+	golangci-lint run

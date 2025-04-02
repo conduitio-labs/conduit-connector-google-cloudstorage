@@ -1,18 +1,16 @@
 module github.com/conduitio-labs/conduit-connector-google-cloudstorage
 
-go 1.23.2
+go 1.24.2
 
 require (
 	cloud.google.com/go/storage v1.50.0
 	github.com/conduitio/conduit-commons v0.5.0
 	github.com/conduitio/conduit-connector-sdk v0.12.0
-	github.com/golangci/golangci-lint v1.63.4
 	github.com/google/uuid v1.6.0
 	github.com/matryer/is v1.4.1
 	go.uber.org/goleak v1.3.0
 	google.golang.org/api v0.215.0
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
-	mvdan.cc/gofumpt v0.7.0
 )
 
 require (
@@ -100,6 +98,7 @@ require (
 	github.com/golangci/dupl v0.0.0-20180902072040-3e9179ac440a // indirect
 	github.com/golangci/go-printf-func-name v0.1.0 // indirect
 	github.com/golangci/gofmt v0.0.0-20241223200906-057b0627d9b9 // indirect
+	github.com/golangci/golangci-lint v1.63.4 // indirect
 	github.com/golangci/misspell v0.6.0 // indirect
 	github.com/golangci/plugin-module-register v0.1.1 // indirect
 	github.com/golangci/revgrep v0.5.3 // indirect
@@ -262,5 +261,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/tools v0.5.1 // indirect
+	mvdan.cc/gofumpt v0.7.0 // indirect
 	mvdan.cc/unparam v0.0.0-20240528143540-8a5130ca722f // indirect
 )
